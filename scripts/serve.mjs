@@ -134,8 +134,10 @@ const server = createServer(async (req, res) => {
   }
 
   /* static, jailed to ROOT. never serve dotfiles: .env lives here. */
-  let path = normalize(decodeURIComponent(url.pathname)).replace(/^\/+/, "");
-  if (!path || path === "." ) path = "home.html";
+  let path = decodeURIComponent(url.pathname).replace(/^\/+/, "");
+  if (!path) path = "home.html";
+  path = normalize(path);
+  if (path === "." ) path = "home.html";
   const full = join(ROOT, path);
   const base = path.split("/").pop() ?? "";
   if (!full.startsWith(ROOT) || base.startsWith(".") || path.startsWith("node_modules")) {
