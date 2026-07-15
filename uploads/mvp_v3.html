@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design Diffusion — Canvas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --violet:#7C4DFF; --violet-deep:#5B2EE0; --violet-soft:#EFE9FF; --lav-bg:#F6F3FF;
+  --ink:#231A3D; --ink-soft:#6B6284; --line:#E3DCF5; --card:#FFFFFF;
+  --teal:#1E9E8F; --green:#3FBF6B; --amber:#F0A34E; --pink:#E86FB4;
+  --radius:14px;
+  --sil:#7C4DFF; --pat:#E86FB4; --col:#1E9E8F; --sym:#F0A34E; --cus:#6B6284;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Inter',sans-serif;color:var(--ink);font-size:14px;
+  background:
+    radial-gradient(1200px 600px at 15% -10%, #E9E0FF 0%, transparent 55%),
+    radial-gradient(1000px 500px at 100% 0%, #DFF3EF 0%, transparent 50%),
+    var(--lav-bg);
+}
+h1,h2,h3,.brand,.btn{font-family:'Space Grotesk',sans-serif}
+
+/* ---------- top bar ---------- */
+.topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:24px;
+  padding:12px 24px;background:rgba(255,255,255,.82);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.brand{font-weight:700;font-size:17px}.brand em{font-style:normal;color:var(--violet)}
+.topbar nav{display:flex;gap:18px;color:var(--ink-soft);font-size:13px}
+.topbar nav span.active{color:var(--ink);font-weight:600}
+.count-tag{margin-left:auto;font-size:12px;color:var(--ink-soft);background:var(--violet-soft);border:1px solid var(--line);padding:5px 12px;border-radius:999px}
+.count-tag b{color:var(--violet-deep)}
+
+/* ---------- layout ---------- */
+.app{display:grid;grid-template-columns:264px 1fr 336px;gap:16px;padding:16px 20px 40px;max-width:1640px;margin:0 auto}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.panel-h{padding:13px 15px 9px;border-bottom:1px dashed var(--line)}
+.panel-h h2{font-size:14px;font-weight:600}
+.panel-h p{font-size:11.5px;color:var(--ink-soft);margin-top:3px;line-height:1.5}
+
+/* ---------- left ---------- */
+.left{display:flex;flex-direction:column;gap:14px;align-self:start;position:sticky;top:70px;max-height:calc(100vh - 90px)}
+.refs{padding:12px 14px;display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.ref{border-radius:10px;aspect-ratio:1/1;position:relative;display:flex;align-items:flex-end;overflow:hidden;border:2px solid transparent}
+.ref.on{border-color:var(--violet)}
+.ref span{width:100%;padding:5px 8px;font-size:10.5px;font-weight:600;color:#fff;background:linear-gradient(transparent, rgba(20,10,50,.65))}
+.ref.r-butterfly{background:radial-gradient(circle at 30% 30%, #FFD84D 0 18%, transparent 19%),radial-gradient(circle at 70% 55%, #F0A34E 0 14%, transparent 15%),linear-gradient(135deg,#2B2140,#6B4DE0)}
+.ref.r-earth{background:linear-gradient(#B08A5E,#8A6A48)}
+.ref.r-earth::after{content:"";position:absolute;inset:0;background:
+  linear-gradient(105deg, transparent 48%, rgba(60,40,20,.5) 49%, transparent 51%),
+  linear-gradient(20deg, transparent 58%, rgba(60,40,20,.45) 59%, transparent 61%)}
+.ref.r-tear{background:radial-gradient(ellipse at 50% 65%, #3FBF6B 0 30%, transparent 60%),linear-gradient(160deg,#134E48,#1E9E8F)}
+.ref.r-add{background:var(--violet-soft);border:1.5px dashed var(--violet);display:flex;align-items:center;justify-content:center;color:var(--violet-deep);font-size:11px;font-weight:600;text-align:center}
+
+.feat-scroll{overflow-y:auto;padding:10px 14px 14px;flex:1}
+.feat-group{margin-bottom:12px}
+.feat-group h4{font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);
+  display:flex;align-items:center;gap:6px;margin-bottom:7px}
+.feat-group h4 i{width:8px;height:8px;border-radius:3px;display:inline-block}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+/* simple pill — original style */
+.tag{
+  font-size:12px;font-weight:500;background:#fff;border:1px solid var(--line);border-radius:999px;
+  padding:5px 12px;cursor:grab;transition:all .15s;position:relative;line-height:1.3;
+}
+.tag:hover{border-color:var(--tc);color:var(--tc);box-shadow:0 3px 10px rgba(90,50,200,.12);transform:translateY(-1px)}
+.tag:active{cursor:grabbing}
+.tag.used{opacity:.3;pointer-events:none}
+.tag.dragging{opacity:.4}
+
+/* ---------- center: free canvas ---------- */
+.center{display:flex;flex-direction:column;gap:12px;min-width:0}
+.canvas-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:0 4px}
+.canvas-head h1{font-size:19px;font-weight:700;letter-spacing:-.01em}
+.canvas-head p{font-size:12px;color:var(--ink-soft)}
+.board{
+  position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  min-height:560px;overflow:hidden;
+  background-image:radial-gradient(var(--line) 1.1px, transparent 1.1px);
+  background-size:26px 26px;
+}
+.board.over{box-shadow:inset 0 0 0 2px var(--violet)}
+.threads{position:absolute;inset:0;pointer-events:none}
+.threads line{stroke-width:1.4;stroke-dasharray:3 5;opacity:.5}
+
+/* the living gown at canvas heart */
+.gown-core{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:150px;text-align:center;pointer-events:none;z-index:2;
+}
+.gown-core svg{width:120px;filter:drop-shadow(0 8px 20px rgba(92,46,224,.18));transition:transform .3s}
+.gown-core.pulse svg{animation:pop .45s ease}
+@keyframes pop{40%{transform:scale(1.07)}}
+.gown-core .hintline{font-size:11px;color:#B4A9D6;line-height:1.6;margin-top:6px}
+
+/* free-floating idea cards */
+.card{
+  position:absolute;z-index:5;background:#fff;border:1px solid var(--line);border-left:3px solid var(--tc);
+  border-radius:10px;padding:8px 11px;max-width:190px;cursor:grab;user-select:none;
+  box-shadow:0 4px 14px rgba(35,26,61,.08);transition:box-shadow .15s;
+  animation:drop-in .3s ease;
+}
+@keyframes drop-in{from{transform:scale(.7);opacity:0}}
+.card:active{cursor:grabbing}
+.card:hover{box-shadow:0 8px 22px rgba(92,46,224,.18);z-index:6}
+.card .txt{font-size:12.5px;font-weight:600;line-height:1.35}
+.card .meta{font-size:10px;color:var(--ink-soft);margin-top:2px}
+.card.emphasized{border-color:var(--amber);border-left-color:var(--amber);background:#FFF9EF}
+.card.emphasized .txt::before{content:"★ ";color:var(--amber)}
+.card .acts{
+  position:absolute;top:-11px;right:-6px;display:none;gap:3px;
+}
+.card:hover .acts{display:flex}
+.card .acts button{
+  width:20px;height:20px;border-radius:50%;border:1px solid var(--line);background:#fff;
+  font-size:10px;cursor:pointer;line-height:1;color:var(--ink-soft);
+}
+.card .acts button:hover{border-color:var(--violet);color:var(--violet-deep)}
+
+/* user note composer */
+.composer{
+  position:absolute;z-index:9;background:#fff;border:1.5px solid var(--violet);border-radius:10px;
+  padding:8px;box-shadow:0 10px 26px rgba(92,46,224,.2);width:210px;
+}
+.composer input{width:100%;border:none;outline:none;font-size:12.5px;font-family:'Inter';font-weight:600}
+.composer .dots{display:flex;gap:6px;margin-top:7px;align-items:center}
+.composer .dots span{font-size:10px;color:var(--ink-soft);margin-right:2px}
+.composer .dots i{width:15px;height:15px;border-radius:50%;cursor:pointer;border:2px solid transparent}
+.composer .dots i.sel{border-color:var(--ink)}
+.board-foot{display:flex;justify-content:space-between;padding:2px 6px;font-size:11px;color:var(--ink-soft)}
+.board-foot b{color:var(--ink)}
+
+/* ---------- right ---------- */
+.right{display:flex;flex-direction:column;gap:14px;align-self:start;position:sticky;top:70px;max-height:calc(100vh - 90px);overflow-y:auto}
+.banner{font-size:11px;color:var(--violet-deep);background:var(--violet-soft);border-bottom:1px solid var(--line);padding:8px 15px;line-height:1.5}
+.formgrid{padding:12px 15px;display:flex;flex-direction:column;gap:8px}
+.frow{display:grid;grid-template-columns:82px 1fr;gap:10px;font-size:12px;align-items:baseline}
+.frow .k{color:var(--ink-soft);font-weight:500}
+.frow .v{font-weight:600;line-height:1.45}
+.frow .v.empty{color:#B4A9D6;font-weight:400;font-style:italic}
+.prompt-box{padding:12px 15px}
+.prompt-text{font-size:12.5px;line-height:1.7;background:var(--lav-bg);border:1px solid var(--line);border-radius:10px;padding:12px;min-height:84px;outline:none}
+.prompt-text[contenteditable="true"]{border-color:var(--violet);background:#fff}
+.hl-sil{color:var(--sil);font-weight:600}.hl-pat{color:var(--pat);font-weight:600}
+.hl-col{color:var(--col);font-weight:600}.hl-sym{color:var(--sym);font-weight:600}
+.prompt-acts{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.btn{font-size:12px;font-weight:600;border-radius:9px;padding:8px 13px;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink);transition:all .15s}
+.btn:hover{border-color:var(--violet);color:var(--violet-deep)}
+.btn.primary{background:linear-gradient(120deg,var(--violet),var(--violet-deep));color:#fff;border:none;width:100%;padding:12px;font-size:13.5px;box-shadow:0 6px 18px rgba(92,46,224,.25)}
+.btn.primary:hover{transform:translateY(-1px)}
+.btn.primary:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+.gen-note{font-size:10.5px;color:var(--ink-soft);text-align:center;margin-top:6px}
+.previews{padding:12px 15px;display:none;flex-direction:column;gap:10px}
+.previews.show{display:flex}
+.pv-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pv{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--lav-bg)}
+.pv .cap{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;font-size:10.5px}
+.pv .cap button{font-size:10px;border:none;background:transparent;color:var(--violet-deep);font-weight:600;cursor:pointer}
+.pv svg{width:100%;display:block;background:linear-gradient(160deg,#fff,var(--violet-soft))}
+.gen-loading{font-size:12px;color:var(--ink-soft);text-align:center;padding:10px}
+
+@media (max-width:1180px){
+  .app{grid-template-columns:1fr}
+  .left,.right{position:static;max-height:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">Design <em>Diffusion</em></div>
+  <nav><span>Home</span><span>Template</span><span class="active">Canvas</span><span>Library</span></nav>
+  <div class="count-tag" id="countTag">Your canvas — <b>0 ideas</b></div>
+</header>
+
+<main class="app">
+
+  <!-- LEFT -->
+  <section class="left">
+    <div class="panel">
+      <div class="panel-h"><h2>Reference Images</h2>
+        <p>AI reads these and extracts design features below.</p></div>
+      <div class="refs">
+        <div class="ref r-butterfly on"><span>Butterfly</span></div>
+        <div class="ref r-earth on"><span>Cracked Earth</span></div>
+        <div class="ref r-tear on"><span>Teal Gradient</span></div>
+        <div class="ref r-add">+ Add<br>reference</div>
+      </div>
+    </div>
+    <div class="panel" style="flex:1;display:flex;flex-direction:column;min-height:0">
+      <div class="panel-h"><h2>Design Features</h2>
+        <p>Extracted from your references. Drag any onto the canvas — they're yours to arrange.</p></div>
+      <div class="feat-scroll" id="featList"></div>
+    </div>
+  </section>
+
+  <!-- CENTER -->
+  <section class="center">
+    <div class="canvas-head">
+      <h1>Compose your design</h1>
+      <p>Drag features anywhere · double-click to write your own idea</p>
+    </div>
+    <div class="board" id="board">
+      <svg class="threads" id="threads"></svg>
+      <div class="gown-core" id="gownCore">
+        <svg id="gownLive" viewBox="0 0 120 170"></svg>
+        <div class="hintline" id="gownHint">Your design starts blank.<br>Surround it with the ideas that should shape it.</div>
+      </div>
+    </div>
+    <div class="board-foot">
+      <span id="footLeft">Every idea you place feeds the design in the middle.</span>
+      <span id="footRight"></span>
+    </div>
+  </section>
+
+  <!-- RIGHT -->
+  <section class="right">
+    <div class="panel">
+      <div class="banner">📋 <b>Design Form</b> — written for you, from what's on your canvas.</div>
+      <div class="formgrid" id="formGrid"></div>
+    </div>
+    <div class="panel">
+      <div class="banner">✏️ <b>Refined Prompt</b> — your canvas, in words.</div>
+      <div class="prompt-box">
+        <div class="prompt-text" id="promptText"></div>
+        <div class="prompt-acts">
+          <button class="btn" id="btnEdit">Edit prompt</button>
+          <button class="btn" id="btnRegen">Regenerate</button>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div style="padding:14px 15px">
+        <button class="btn primary" id="btnGen" disabled>Generate from My Canvas</button>
+        <div class="gen-note">Results come from your composition — not a black box.</div>
+      </div>
+      <div class="previews" id="previews"></div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+/* =============== data =============== */
+const CATS = {
+  Pattern:{ label:"Pattern & Texture", color:"var(--pat)", hex:"#E86FB4" },
+  Silhouette:{ label:"Silhouette & Shape", color:"var(--sil)", hex:"#7C4DFF" },
+  Color:{ label:"Color Palette", color:"var(--col)", hex:"#1E9E8F" },
+  Symbolic:{ label:"Symbolic / Thematic", color:"var(--sym)", hex:"#F0A34E" },
+  Custom:{ label:"My Ideas", color:"var(--cus)", hex:"#6B6284" }
+};
+let FEATURES = [
+  {id:"f1", val:"radiating symmetry", type:"Pattern", source:"Butterfly"},
+  {id:"f2", val:"small delicate cracks", type:"Pattern", source:"Cracked Earth"},
+  {id:"f3", val:"teardrop-like forms", type:"Pattern", source:"Teal Gradient"},
+  {id:"f4", val:"overlapping translucent wings", type:"Pattern", source:"Butterfly"},
+  {id:"f5", val:"wing-like curves", type:"Silhouette", source:"Butterfly"},
+  {id:"f6", val:"scalloped edges", type:"Silhouette", source:"Butterfly"},
+  {id:"f7", val:"fluid A-line drape", type:"Silhouette", source:"Teal Gradient"},
+  {id:"f8", val:"teal-to-green gradient", type:"Color", source:"Teal Gradient"},
+  {id:"f9", val:"earthy warm undertone", type:"Color", source:"Cracked Earth"},
+  {id:"f10", val:"light, airy layering", type:"Color", source:"Butterfly"},
+  {id:"f11", val:"transformation & rebirth", type:"Symbolic", source:"Butterfly"},
+  {id:"f12", val:"delicate, graceful", type:"Symbolic", source:"Butterfly"},
+];
+const state = { cards:[], promptEdited:false };
+let uid = 0;
+
+/* =============== left: simple tags =============== */
+const featList = document.getElementById("featList");
+function renderFeatures(){
+  featList.innerHTML = "";
+  Object.entries(CATS).forEach(([key,cat])=>{
+    if(key==="Custom") return;
+    const items = FEATURES.filter(f=>f.type===key);
+    if(!items.length) return;
+    const g = document.createElement("div"); g.className="feat-group";
+    g.innerHTML = `<h4><i style="background:${cat.hex}"></i>${cat.label}</h4>`;
+    const tags = document.createElement("div"); tags.className="tags";
+    items.forEach(f=>{
+      const t = document.createElement("div");
+      t.className = "tag" + (f.used ? " used":"");
+      t.textContent = f.val;
+      t.style.setProperty("--tc", cat.hex);
+      t.draggable = !f.used;
+      t.title = f.source;
+      t.addEventListener("dragstart", e=>{ e.dataTransfer.setData("text/plain", f.id); t.classList.add("dragging"); });
+      t.addEventListener("dragend", ()=> t.classList.remove("dragging"));
+      tags.appendChild(t);
+    });
+    g.appendChild(tags); featList.appendChild(g);
+  });
+}
+
+/* =============== center: free board =============== */
+const board = document.getElementById("board");
+const threads = document.getElementById("threads");
+const gownCore = document.getElementById("gownCore");
+
+board.addEventListener("dragover", e=>{ e.preventDefault(); board.classList.add("over"); });
+board.addEventListener("dragleave", ()=> board.classList.remove("over"));
+board.addEventListener("drop", e=>{
+  e.preventDefault(); board.classList.remove("over");
+  const id = e.dataTransfer.getData("text/plain");
+  const f = FEATURES.find(x=>x.id===id);
+  if(!f || f.used) return;
+  const r = board.getBoundingClientRect();
+  placeCard({ val:f.val, type:f.type, source:f.source, featId:id },
+    clamp(e.clientX - r.left - 80, 8, r.width-200),
+    clamp(e.clientY - r.top - 20, 8, r.height-60));
+  f.used = true;
+  refresh();
+});
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+function placeCard(data, x, y){
+  state.cards.push({ uid:"c"+(++uid), ...data, x, y, status:"normal" });
+  gownCore.classList.remove("pulse"); void gownCore.offsetWidth; gownCore.classList.add("pulse");
+}
+
+/* double-click empty board → write your own idea */
+board.addEventListener("dblclick", e=>{
+  if(e.target.closest(".card") || e.target.closest(".composer")) return;
+  openComposer(e.offsetX, e.offsetY);
+});
+function openComposer(x, y){
+  closeComposer();
+  const r = board.getBoundingClientRect();
+  const c = document.createElement("div");
+  c.className = "composer";
+  c.style.left = clamp(x,8,r.width-220)+"px"; c.style.top = clamp(y,8,r.height-80)+"px";
+  let sel = "Custom";
+  c.innerHTML = `<input placeholder="Write your own idea…" maxlength="60">
+    <div class="dots"><span>as</span>${Object.entries(CATS).map(([k,cat])=>
+      `<i data-k="${k}" class="${k===sel?'sel':''}" style="background:${cat.hex}" title="${cat.label}"></i>`).join("")}</div>`;
+  c.querySelectorAll("i").forEach(dot=>{
+    dot.addEventListener("click", ()=>{ sel = dot.dataset.k;
+      c.querySelectorAll("i").forEach(d=>d.classList.toggle("sel", d===dot)); });
+  });
+  const input = c.querySelector("input");
+  input.addEventListener("keydown", ev=>{
+    if(ev.key==="Enter" && input.value.trim()){
+      placeCard({val:input.value.trim(), type:sel, source:"You"}, parseFloat(c.style.left), parseFloat(c.style.top));
+      closeComposer(); refresh();
+    }
+    if(ev.key==="Escape") closeComposer();
+  });
+  board.appendChild(c); input.focus();
+}
+function closeComposer(){ const c = board.querySelector(".composer"); if(c) c.remove(); }
+document.addEventListener("click", e=>{
+  if(!e.target.closest(".composer") && !e.target.closest(".board")) closeComposer();
+});
+
+/* render cards */
+function renderCards(){
+  board.querySelectorAll(".card").forEach(el=>el.remove());
+  state.cards.forEach(cd=>{
+    const el = document.createElement("div");
+    el.className = "card" + (cd.status==="emphasized" ? " emphasized":"");
+    el.style.left = cd.x+"px"; el.style.top = cd.y+"px";
+    el.style.setProperty("--tc", CATS[cd.type].hex);
+    el.innerHTML = `<div class="txt">${cd.val}</div>
+      <div class="meta">${cd.source==="You" ? "your idea" : "from "+cd.source}</div>
+      <div class="acts">
+        <button data-a="emph" title="Emphasize in the design">★</button>
+        <button data-a="rm" title="Remove">✕</button>
+      </div>`;
+    el.querySelector('[data-a="emph"]').addEventListener("click", e=>{
+      e.stopPropagation(); cd.status = cd.status==="emphasized" ? "normal":"emphasized"; refresh();
+    });
+    el.querySelector('[data-a="rm"]').addEventListener("click", e=>{
+      e.stopPropagation();
+      if(cd.featId){ const f = FEATURES.find(x=>x.id===cd.featId); if(f) f.used=false; }
+      state.cards = state.cards.filter(c=>c.uid!==cd.uid); refresh();
+    });
+    /* free move */
+    el.addEventListener("pointerdown", e=>{
+      if(e.target.tagName==="BUTTON") return;
+      const r = board.getBoundingClientRect();
+      const ox = e.clientX - r.left - cd.x, oy = e.clientY - r.top - cd.y;
+      el.setPointerCapture(e.pointerId);
+      const move = ev=>{
+        cd.x = clamp(ev.clientX - r.left - ox, 4, r.width - el.offsetWidth - 4);
+        cd.y = clamp(ev.clientY - r.top - oy, 4, r.height - el.offsetHeight - 4);
+        el.style.left = cd.x+"px"; el.style.top = cd.y+"px";
+        drawThreads();
+      };
+      const up = ()=>{ el.removeEventListener("pointermove", move); el.removeEventListener("pointerup", up); };
+      el.addEventListener("pointermove", move);
+      el.addEventListener("pointerup", up);
+    });
+    board.appendChild(el);
+  });
+  drawThreads();
+}
+
+/* threads: every idea feeds the gown */
+function drawThreads(){
+  const r = board.getBoundingClientRect();
+  threads.setAttribute("viewBox", `0 0 ${r.width} ${r.height}`);
+  const gx = r.width/2, gy = r.height/2;
+  threads.innerHTML = state.cards.map(cd=>{
+    const el = [...board.querySelectorAll(".card")].find(e=>parseFloat(e.style.left)===cd.x && parseFloat(e.style.top)===cd.y);
+    const w = el ? el.offsetWidth/2 : 80, h = el ? el.offsetHeight/2 : 24;
+    return `<line x1="${cd.x+w}" y1="${cd.y+h}" x2="${gx}" y2="${gy}" stroke="${CATS[cd.type].hex}"/>`;
+  }).join("");
+}
+window.addEventListener("resize", drawThreads);
+
+/* =============== gown driven by the canvas =============== */
+function byType(t){ return state.cards.filter(c=>c.type===t); }
+function vals(t){ return byType(t).map(c=> c.status==="emphasized" ? "strongly "+c.val : c.val); }
+function gownColors(){
+  const v = byType("Color").map(c=>c.val).join(" ");
+  if(/teal|green/.test(v)) return ["#1E9E8F","#3FBF6B"];
+  if(/earthy|warm/.test(v)) return ["#8A6A48","#C9A876"];
+  if(/airy|layer/.test(v)) return ["#B9AEE8","#E6E0FA"];
+  return ["#C9C0E8","#EFE9FF"];
+}
+function renderGown(svg, seed=0){
+  const [c1,c2] = gownColors();
+  const silv = byType("Silhouette").map(c=>c.val).join(" ");
+  const wingy = /wing|scalloped/.test(silv);
+  const skirtW = /A-line|drape/.test(silv) || !silv ? 46 : 34;
+  const hemY = 150;
+  const gid = "g"+Math.random().toString(36).slice(2,7);
+  let pat = "";
+  const pv = byType("Pattern").map(c=>c.val).join(" ");
+  if(/teardrop/.test(pv)) for(let i=0;i<6;i++){
+    const x=48+((i*13+seed*7)%28), y=95+((i*17)%48);
+    pat += `<path d="M${x} ${y} q4 6 0 10 q-4 -4 0 -10" fill="rgba(255,255,255,.45)"/>`;
+  }
+  if(/symmetry/.test(pv)) for(let a=-2;a<=2;a++)
+    pat += `<line x1="60" y1="70" x2="${60+a*skirtW/2.4}" y2="${hemY-6}" stroke="rgba(255,255,255,.35)" stroke-width="1"/>`;
+  if(/crack/.test(pv))
+    pat += `<path d="M50 100 l4 8 l-3 7 M70 92 l-3 9 l4 8 M60 110 l3 10" stroke="rgba(40,25,10,.3)" stroke-width=".8" fill="none"/>`;
+  if(/translucent|wings/.test(pv))
+    pat += `<ellipse cx="48" cy="105" rx="10" ry="18" fill="rgba(255,255,255,.18)"/><ellipse cx="72" cy="115" rx="10" ry="18" fill="rgba(255,255,255,.18)"/>`;
+  svg.innerHTML = `
+    <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/>
+    </linearGradient></defs>
+    <circle cx="60" cy="16" r="8" fill="#D8CFF2"/>
+    <path d="M60 26 C52 30 50 36 51 48 C52 60 54 66 60 70 C66 66 68 60 69 48 C70 36 68 30 60 26 Z" fill="url(#${gid})"/>
+    <path d="M52 66 C ${60-skirtW} 100 ${60-skirtW} 135 ${60-skirtW} ${hemY}
+      ${wingy ? `C ${60-skirtW+8} ${hemY+6} ${60-skirtW+14} ${hemY-6} ${60-skirtW*0.33} ${hemY} C ${60-skirtW*0.15} ${hemY+6} ${60+skirtW*0.15} ${hemY-6} ${60+skirtW*0.33} ${hemY} C ${60+skirtW-14} ${hemY+6} ${60+skirtW-8} ${hemY-6} ${60+skirtW} ${hemY}` : `L ${60+skirtW} ${hemY}`}
+      C ${60+skirtW} 135 ${60+skirtW} 100 68 66 C 64 70 56 70 52 66 Z" fill="url(#${gid})" opacity=".96"/>
+    ${pat}`;
+}
+
+/* =============== right: silent translation =============== */
+function renderForm(){
+  const g = document.getElementById("formGrid");
+  const row = (k,arr,fb) => `<div class="frow"><span class="k">${k}</span>
+    <span class="v ${arr.length? "":"empty"}">${arr.length? arr.join("; ") : fb}</span></div>`;
+  g.innerHTML =
+    row("Category", state.cards.length?["Long Dress"]:[], "—") +
+    row("Silhouette", vals("Silhouette"), "—") +
+    row("Pattern", vals("Pattern"), "—") +
+    row("Color", vals("Color"), "—") +
+    row("Symbolic", vals("Symbolic"), "—") +
+    row("Fabric", state.cards.length?["silk or chiffon"]:[], "—") +
+    row("My ideas", vals("Custom"), "—");
+}
+const promptText = document.getElementById("promptText");
+function buildPrompt(){
+  if(!state.cards.length) return `<span style="color:#B4A9D6">As you compose the canvas, your prompt is written here — in your words' order of importance.</span>`;
+  const sil = vals("Silhouette"), pat = vals("Pattern"), col = vals("Color"), sym = vals("Symbolic"), cus = vals("Custom");
+  const srcs = [...new Set(state.cards.map(c=>c.source).filter(s=>s!=="You"))];
+  let p = `An A-line long dress`;
+  if(col.length) p += ` with a <span class="hl-col">${col.join(" and ")}</span> palette`;
+  if(srcs.length) p += `, inspired by ${srcs.join(" and ")}`;
+  p += `.`;
+  if(sil.length) p += ` The form follows <span class="hl-sil">${sil.join(", ")}</span>.`;
+  if(pat.length) p += ` The surface carries <span class="hl-pat">${pat.join(", ")}</span>, larger toward the hem for weight, smaller toward the bodice for lightness.`;
+  p += ` Made from soft silk or chiffon`;
+  if(sym.length) p += `, the design symbolizes <span class="hl-sym">${sym.join(" and ")}</span>`;
+  p += `.`;
+  if(cus.length) p += ` Designer's notes: ${cus.join("; ")}.`;
+  return p;
+}
+function renderPrompt(){ if(!state.promptEdited) promptText.innerHTML = buildPrompt(); }
+document.getElementById("btnEdit").addEventListener("click", function(){
+  const editing = promptText.getAttribute("contenteditable")==="true";
+  promptText.setAttribute("contenteditable", editing?"false":"true");
+  this.textContent = editing ? "Edit prompt" : "Done editing";
+  if(!editing){ promptText.focus(); state.promptEdited = true; }
+});
+document.getElementById("btnRegen").addEventListener("click", ()=>{
+  state.promptEdited = false;
+  promptText.setAttribute("contenteditable","false");
+  document.getElementById("btnEdit").textContent = "Edit prompt";
+  renderPrompt();
+});
+
+/* =============== generate (mock) =============== */
+const btnGen = document.getElementById("btnGen");
+const previews = document.getElementById("previews");
+btnGen.addEventListener("click", ()=>{
+  previews.classList.add("show");
+  previews.innerHTML = `<div class="gen-loading">Reading your canvas…</div>`;
+  setTimeout(()=>{
+    previews.innerHTML = "";
+    const grid = document.createElement("div"); grid.className="pv-grid";
+    ["Variation","Fine-tuning"].forEach((label,i)=>{
+      const pv = document.createElement("div"); pv.className="pv";
+      pv.innerHTML = `<svg viewBox="0 0 120 170"></svg>
+        <div class="cap"><b>${label}</b><button>↻ Reroll</button></div>`;
+      grid.appendChild(pv);
+      renderGown(pv.querySelector("svg"), i+1);
+      pv.querySelector("button").addEventListener("click", ()=> renderGown(pv.querySelector("svg"), Math.floor(Math.random()*9)));
+    });
+    previews.appendChild(grid);
+    const n = document.createElement("div"); n.className="gen-note";
+    n.textContent = "Not quite it? Rearrange or swap ideas on the canvas, then regenerate.";
+    previews.appendChild(n);
+  }, 900);
+});
+
+/* =============== master refresh =============== */
+function refresh(){
+  renderFeatures();
+  renderCards();
+  renderGown(document.getElementById("gownLive"));
+  renderForm();
+  renderPrompt();
+  const n = state.cards.length;
+  document.getElementById("countTag").innerHTML = `Your canvas — <b>${n} idea${n===1?"":"s"}</b>`;
+  document.getElementById("gownHint").style.display = n ? "none":"block";
+  document.getElementById("footRight").innerHTML = n ? `<b>${state.cards.filter(c=>c.source==="You").length}</b> of these are your own ideas` : "";
+  btnGen.disabled = !n;
+}
+refresh();
+</script>
+</body>
+</html>

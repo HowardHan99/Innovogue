@@ -1,0 +1,42 @@
+/* GENERATED from src/tokens.ts — edit that file, then `npm run tokens`. */
+:root{
+  /* surfaces */
+  --bg:#141114;
+  --card:#1D191C;
+  --panel:#272127;
+  --canvas:#182019;
+  --canvas-line:rgba(196, 214, 181, .10);
+
+  /* ink */
+  --ink:#F6F2E8;
+  --ink-soft:#ADA79A;
+  --ink-dim:#7E7A6F;
+
+  /* hairlines */
+  --line:rgba(255,255,255,.11);
+  --line-soft:rgba(255,255,255,.06);
+
+  /* accents — pink comes in two registers: --pink is the workhorse rose,
+     --pink-hot is button-sized elements ONLY */
+  --pink:#F493BE;
+  --pink-hot:#FF8FC2;
+  --pink-ink:#2E1220;
+  --butter:#EDE4A2;
+  --green:#A9C77F;
+  --blue:#7FB4E6;
+
+  /* element categories */
+  --pat:#FF8FC2;
+  --sil:#EDE4A2;
+  --col:#A9C77F;
+  --sym:#7FB4E6;
+  --cus:#8b877c;
+
+  /* geometry */
+  --radius:14px;
+
+  /* legacy aliases (innovogue-v23.html) */
+  --fg:var(--ink);
+  --dim:var(--ink-soft);
+  --dim2:var(--ink-dim);
+}

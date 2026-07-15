@@ -1,0 +1,7 @@
+.env
+.env.*
+uploads/
+skills/
+.thumbnail
+CLAUDE.md
+node_modules/

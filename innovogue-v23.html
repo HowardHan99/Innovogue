@@ -1,0 +1,1194 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Innovogue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:ital,wght@0,400;0,500;0,600;1,400&family=Fraunces:ital,opsz,wght@1,9..144,400&family=Space+Mono:wght@400;700&family=Gochi+Hand&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<style>
+/* palette lives in tokens.css (generated from src/tokens.ts); --fg/--dim/--dim2 are aliased there */
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);overflow-x:hidden;font-family:"Hanken Grotesk",system-ui,sans-serif;-webkit-font-smoothing:antialiased;position:relative}
+.serif{font-family:"Fraunces",serif}.hand{font-family:"Space Mono",monospace}.mono{font-family:"Space Mono",monospace}
+a{color:inherit;text-decoration:none}
+/* cinematic overlays */
+.vignette{position:fixed;inset:0;pointer-events:none;z-index:30;
+  background:radial-gradient(120% 90% at 60% 42%,transparent 40%,rgba(0,0,0,.55) 100%)}
+.grain{position:fixed;inset:0;pointer-events:none;z-index:31;opacity:.06;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>")}
+
+.top{display:flex;justify-content:space-between;align-items:flex-start;padding:26px 36px;position:relative;z-index:10}
+.brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:15px;letter-spacing:-.01em}
+.brand .mk{width:16px;height:16px;border-radius:50%;background:var(--pink);box-shadow:0 0 20px 0 #ff5fa8aa}
+.top .rt{text-align:right;color:var(--dim);font-size:11px;line-height:1.7;font-family:"Space Mono",monospace}
+
+/* HERO stage */
+.hero{position:relative;height:760px;max-width:min(1720px,95vw);margin:0 auto}
+.spot{position:absolute;top:70px;right:60px;width:760px;height:640px;z-index:0;pointer-events:none;
+  background:radial-gradient(45% 45% at 55% 45%,rgba(255,120,180,.16),transparent 70%)}
+.head{position:absolute;left:44px;top:150px;z-index:9;max-width:520px}
+.kick{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.14em;color:var(--dim);margin-bottom:20px;display:flex;gap:10px;align-items:center}
+.kick::before{content:"";width:30px;height:1px;background:var(--dim2)}
+h1{font-weight:800;font-size:clamp(46px,6vw,84px);line-height:.92;letter-spacing:-.04em;margin:0}
+h1 .l2{display:block;font-family:"Fraunces",serif;font-weight:400;font-style:italic;letter-spacing:-.02em;color:var(--fg);margin-top:.06em}
+.say{margin:28px 0 0;max-width:23em;font-size:16px;line-height:1.6;color:var(--dim)}
+.cta{display:flex;align-items:center;gap:22px;margin-top:34px}
+.pill{font-weight:600;cursor:pointer;border:0;border-radius:999px;font-size:15px;padding:14px 24px;background:var(--pink-hot);color:#28121c;
+  display:inline-flex;gap:8px;align-items:center;transition:transform .4s cubic-bezier(.34,1.56,.64,1),box-shadow .3s}
+.pill:hover{transform:scale(1.05) rotate(-1.3deg);box-shadow:0 20px 44px -16px #ff5fa8}
+.quiet{color:var(--dim);font-size:14px;border-bottom:1px solid var(--dim2);padding-bottom:2px}
+.quiet:hover{color:var(--fg)}
+
+/* objects */
+.stage{position:absolute;inset:0;z-index:3}
+.layer{position:absolute;will-change:transform}
+.ob{position:relative;animation:fl var(--d,10s) ease-in-out infinite;animation-delay:var(--dl,0s)}
+.ob img{display:block;width:100%;filter:drop-shadow(0 30px 40px rgba(0,0,0,.6))}
+.ob .csh{position:absolute;left:50%;bottom:-6%;width:78%;height:10%;transform:translateX(-50%);
+  background:radial-gradient(ellipse,rgba(0,0,0,.6),transparent 70%);filter:blur(10px);z-index:-1}
+.cap{position:absolute;font-family:"Space Mono",monospace;font-size:10px;color:var(--dim);letter-spacing:.05em;z-index:8}
+.fig{position:absolute;z-index:7;animation:sway var(--sd,5s) ease-in-out infinite}
+.fig img{display:block;width:100%;filter:drop-shadow(0 10px 12px rgba(0,0,0,.7))}
+@keyframes fl{0%,100%{transform:translateY(0) rotate(var(--r,0deg))}50%{transform:translateY(var(--fy,-14px)) rotate(calc(var(--r,0deg) + var(--rr,1.5deg)))}}
+@keyframes sway{0%,100%{transform:rotate(var(--fr,0deg))}50%{transform:rotate(calc(var(--fr,0deg) + 2.5deg))}}
+
+
+/* ---- entrance choreography (translate/scale props, independent of transform) ---- */
+@keyframes enter{from{opacity:0;translate:0 70px;scale:.78}to{opacity:1;translate:0 0;scale:1}}
+.ob{opacity:0;animation:fl var(--d,10s) ease-in-out infinite,enter 1s cubic-bezier(.22,1.35,.5,1) both;animation-delay:var(--dl,0s),var(--edl,0s)}
+.fig{opacity:0;animation:sway var(--sd,5s) ease-in-out infinite,enter 1.1s cubic-bezier(.22,1.35,.5,1) both;animation-delay:0s,var(--edl,.6s)}
+.cap{opacity:0;animation:capin 1.2s ease both 1.5s}
+@keyframes capin{from{opacity:0;translate:0 8px}to{opacity:1;translate:0 0}}
+.spot{animation:breathe 7s ease-in-out infinite alternate}
+@keyframes breathe{from{opacity:.75;scale:1}to{opacity:1;scale:1.08}}
+/* hover pops */
+.ob img,.fig img{transition:transform .5s cubic-bezier(.34,1.56,.64,1)}
+.layer:hover .ob img{transform:scale(1.05) rotate(-2deg)}
+.fig:hover img{transform:scale(1.14) rotate(3deg)}
+
+/* ---- CASE SHOW ---- */
+.slab{text-align:center;font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.22em;color:var(--dim);margin:110px 0 0}
+.cases{position:relative;max-width:min(1720px,95vw);margin:0 auto;padding:54px clamp(40px,4vw,64px) 30px}
+.chead{display:flex;justify-content:space-between;align-items:flex-start;gap:60px;border-top:1px solid var(--line);padding-top:34px}
+.tags{display:flex;gap:8px;margin-bottom:20px}
+.tag{font-size:11.5px;padding:6px 13px;border:1px solid #ffffff26;border-radius:999px;color:var(--fg);background:#ffffff0a}
+.chead h2{font-weight:800;font-size:clamp(26px,3.2vw,40px);line-height:1.04;letter-spacing:-.03em;margin:0;max-width:15em}
+.chead h2 .serif{font-style:italic;font-weight:400;color:var(--pink)}
+.chead .cr{max-width:22em;padding-top:6px}
+.chead .cr p{margin:0 0 18px;font-size:13.5px;line-height:1.65;color:var(--dim)}
+.see{font-family:"Space Mono",monospace;font-size:12px;color:var(--fg);border-bottom:1px solid var(--dim2);padding-bottom:2px}
+.see:hover{color:var(--pink);border-color:var(--pink)}
+.mq{margin-top:44px;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)}
+.track{display:flex;gap:16px;width:max-content;animation:mq 56s linear infinite}
+.mq:hover .track{animation-play-state:paused}
+@keyframes mq{to{transform:translateX(-50%)}}
+.card{position:relative;margin:0;height:340px;border-radius:14px;overflow:hidden;flex:none;background:var(--card)}
+.card img{display:block;height:100%;width:auto;transition:transform .8s cubic-bezier(.2,.8,.2,1)}
+.card:hover img{transform:scale(1.045)}
+.card figcaption{position:absolute;left:12px;bottom:12px;font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.05em;
+  color:var(--fg);background:#000000a8;backdrop-filter:blur(8px);padding:5px 10px;border-radius:999px}
+.card.rf::after{content:"";position:absolute;inset:0;border-radius:14px;border:1px dashed #ffffff3d;pointer-events:none}
+
+/* ---- CLOSE scene ---- */
+.close{padding:130px 36px 170px;text-align:center}
+.close .cin{max-width:34em;margin:0 auto}
+.close h3{margin:26px 0 14px}
+.csub{font-size:11px;letter-spacing:.2em;color:var(--dim);margin:0 0 34px}
+.bfly{width:min(340px,70vw);margin:0 auto}
+.bfly svg{width:100%;height:auto;overflow:visible}
+.bfly .st{fill:none;stroke:var(--fg);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:1;stroke-dashoffset:1}
+.bfly .trail{stroke:var(--dim2);stroke-width:1.6;stroke-dasharray:.02 .028;stroke-dashoffset:1}
+.bfly.on .st{animation:draw 1.3s ease forwards;animation-delay:var(--sd,0s)}
+.bfly.on .trail{animation:draw 1.8s ease forwards .1s}
+@keyframes draw{to{stroke-dashoffset:0}}
+.bfly .wing{transform-box:view-box;transform-origin:160px 128px}
+.bfly.on .wL{animation:flapL 3.4s ease-in-out 2s infinite}
+.bfly.on .wR{animation:flapR 3.4s ease-in-out 2s infinite}
+@keyframes flapL{50%{transform:rotate(6deg) scaleX(.93)}}
+@keyframes flapR{50%{transform:rotate(-6deg) scaleX(.93)}}
+.bfly .spk{fill:var(--butter);opacity:0;transform-box:fill-box;transform-origin:center}
+.bfly.on .spk{animation:pop .7s cubic-bezier(.34,1.7,.6,1) forwards var(--pd,1.7s),tw 2.6s ease-in-out infinite calc(var(--pd,1.7s) + .7s)}
+@keyframes pop{from{opacity:0;transform:scale(0) rotate(-40deg)}to{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes tw{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.82) rotate(12deg)}}
+@media (prefers-reduced-motion:reduce){
+  .ob,.fig,.cap,.spot,.track,.bfly .st,.bfly .trail,.bfly .wing,.bfly .spk{animation:none!important;opacity:1;stroke-dashoffset:0}
+  .mq{overflow-x:auto}
+}
+@media (max-width:1000px){
+  .chead{flex-direction:column;gap:22px}
+  .card{height:240px}
+  .close{padding:80px 26px 140px}
+}
+
+
+/* ================= HERO v3 : the rack ================= */
+.hero2{position:relative;max-width:min(1720px,95vw);margin:0 auto;padding:34px 40px 0;text-align:center}
+.hero2 .t{font-family:"Inter Tight",sans-serif;font-size:clamp(30px,4.4vw,60px);line-height:1.08;letter-spacing:-.025em;font-weight:400;margin:22px auto 0;max-width:21em}
+.hero2 .t .b{font-weight:700}
+.hero2 .t .doo{display:inline-block;width:1.5em;vertical-align:-.14em;margin:0 .04em}
+.hero2 .t .doo path{fill:none;stroke:var(--fg);stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.rackwrap{position:relative;width:min(1240px,97vw);margin:6px auto 0}
+.rackwrap svg{width:100%;height:auto;overflow:visible;display:block}
+.rk .st{fill:none;stroke:var(--fg);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1s ease forwards;animation-delay:var(--sd,0s)}
+.rk .thin{stroke-width:2}
+.rk .ghost{opacity:.32;stroke-width:1.6}
+.rk .hg{transform-box:view-box;transform-origin:var(--ox,600px) 118px;opacity:0;
+  animation:hsw var(--hd,6.5s) ease-in-out infinite,hgin .8s cubic-bezier(.3,1.4,.5,1) both var(--hdl,1.1s)}
+@keyframes hsw{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}}
+@keyframes hgin{from{opacity:0;translate:0 -18px}to{opacity:1;translate:0 0}}
+.rk .hg:hover{animation:hswb 1.3s ease-in-out infinite,hgin 0s both}
+@keyframes hswb{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
+.rk .fly2{transform-box:fill-box;transform-origin:center;animation:perc 4.5s ease-in-out infinite 2.2s}
+@keyframes perc{0%,88%,100%{transform:scaleX(1)}92%,96%{transform:scaleX(.86)}}
+.tagcta{cursor:pointer}
+.tagcta .tagbody{fill:var(--butter)}
+.tagcta text{font-family:"Gochi Hand",cursive;font-size:21px;fill:#241f10;text-anchor:middle}
+.tagcta:hover .tagbody{fill:#f6ecab}
+.tagcta:focus-visible{outline:2px solid var(--pink);outline-offset:4px}
+
+/* ================= case chips ================= */
+.card figcaption{display:flex;gap:6px;background:none;backdrop-filter:none;padding:0}
+.chip{font-family:"Space Mono",monospace;font-size:9.5px;letter-spacing:.04em;padding:5px 10px;border-radius:999px;background:#000000b0;backdrop-filter:blur(8px)}
+.chip.th{color:var(--pink);border:1px solid #ff8fc24d}
+.chip.el{color:var(--fg);border:1px solid #ffffff2b}
+.slab{font-family:"Gochi Hand",cursive;font-size:15px;letter-spacing:.3em}
+
+/* ================= pixel MVP demo ================= */
+.pxcur{position:absolute;left:88%;top:12%;z-index:22;width:27px;pointer-events:none;filter:drop-shadow(3px 4px 0 #000000cc);transition:transform .18s}
+.pxcur svg{display:block;width:100%}
+.pxcur.clicked{transform:scale(.82)}
+.pxcur.clicked::after{content:"";position:absolute;inset:-9px;border:2px solid var(--butter);opacity:0;animation:pxburst .5s ease-out}
+@keyframes pxburst{from{opacity:1;transform:scale(.4)}to{opacity:0;transform:scale(1.5)}}
+.pxwin{position:absolute;left:50%;top:47%;z-index:21;width:min(540px,88%);transform:translate(-50%,-50%) scale(.5);transform-origin:62% 118%;
+  opacity:0;pointer-events:none;background:#0e0d0b;border:3px solid var(--fg);box-shadow:9px 9px 0 #ffffff1f;
+  transition:opacity 1.15s ease,transform 1.3s cubic-bezier(.22,.85,.3,1)}
+.pxwin.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
+.pxbar{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:3px solid var(--fg);background:#171512}
+.pxt{font-family:"Press Start 2P",monospace;font-size:8px;color:var(--butter)}
+.pxbtns{display:flex;gap:6px}
+.pxbtns i{width:11px;height:11px;background:#3a362e;border:2px solid var(--fg)}
+.pxbtns i.x{background:var(--pink)}
+.pxbody{display:grid;grid-template-columns:1fr 1.35fr 1fr;gap:12px;padding:14px}
+.pxh{font-family:"Press Start 2P",monospace;font-size:7px;color:var(--dim);margin-bottom:9px}
+.pxcol img{display:block;width:100%;height:64px;object-fit:cover;image-rendering:pixelated;border:2px solid var(--fg);margin-bottom:8px}
+.pxchip{font-family:"Space Mono",monospace;font-size:9.5px;color:var(--fg);border:2px solid #ffffff38;padding:6px 7px;margin-bottom:7px;background:#161411}
+.pxchip b{color:var(--pink);font-weight:400}
+.pxarr{font-family:"Press Start 2P",monospace;font-size:9px;color:var(--butter);text-align:center;margin-top:2px}
+.pxgen{font-family:"Press Start 2P",monospace;font-size:7.5px;background:var(--butter);color:#241f10;text-align:center;padding:8px 4px;border:2px solid var(--fg);box-shadow:3px 3px 0 #00000088;cursor:pointer}
+.pxgen:hover{translate:0 -1px}
+.pxfoot{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:3px solid var(--fg);background:#171512}
+.pxblocks{display:flex;gap:4px}
+.pxblocks b{width:9px;height:9px;background:#2c2923}
+.pxwin.show .pxblocks b:nth-child(-n+6){background:var(--pink)}
+.pxst{font-family:"Space Mono",monospace;font-size:9.5px;color:var(--dim)}
+.pxst::after{content:"▊";animation:blink 1s steps(1) infinite;color:var(--butter)}
+@keyframes blink{50%{opacity:0}}
+
+/* ================= CLOSE v3 : the poke ================= */
+.scene{position:relative;height:280px;width:min(620px,94vw);margin:0 auto 6px}
+.st2{fill:none;stroke:var(--fg);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1}
+.scene.on .st2{animation:draw 1.2s ease forwards var(--sd,0s)}
+.flies{position:absolute;left:0;top:50%;width:280px;height:220px;translate:0 -50%;
+  transform:translateX(calc(-36vw * (1 - var(--p,0))))}
+.handp{position:absolute;right:26px;top:50%;width:320px;translate:0 -50%;
+  transform:translateX(calc(44vw * (1 - var(--p,0))))}
+.fb{position:absolute}
+.fb svg{width:100%;height:auto;overflow:visible}
+.fb .wg{transform-box:fill-box;transform-origin:center;animation:soar 5s ease-in-out infinite var(--fd,0s)}
+@keyframes soar{0%,100%{transform:scaleX(1)}50%{transform:scaleX(.8)}}
+.scene.touch .fb .wg{animation:soarfast .5s ease-in-out infinite}
+@keyframes soarfast{0%,100%{transform:scaleX(1)}50%{transform:scaleX(.7)}}
+.fb{animation:hover1 6s ease-in-out infinite var(--fd,0s)}
+@keyframes hover1{0%,100%{translate:0 0}50%{translate:0 -9px}}
+.scene.touch .fb{animation:hop .55s cubic-bezier(.3,1.5,.5,1) 1}
+@keyframes hop{40%{translate:-7px -16px}100%{translate:0 0}}
+.spark2{position:absolute;left:46%;top:42%;width:44px;opacity:0;transform:scale(0) rotate(-35deg);transform-origin:center}
+.spark2 path{fill:var(--butter)}
+.scene.touch .spark2{animation:pop .6s cubic-bezier(.3,1.7,.55,1) forwards,tw 2.4s ease-in-out infinite .6s}
+.pokelines{opacity:0}
+.scene.touch .pokelines{opacity:1;transition:opacity .2s}
+/* dropzone */
+.drop{display:flex;gap:22px;align-items:center;position:relative;padding:26px 42px;margin:38px auto 0;width:fit-content;max-width:88vw;text-align:left}
+.drop .ants{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.drop .ants rect{width:calc(100% - 3px);height:calc(100% - 3px);x:1.5px;y:1.5px;rx:18px;fill:none;stroke:var(--dim2);stroke-width:2;stroke-dasharray:9 7}
+.drop:hover .ants rect{stroke:var(--pink);animation:ants 1s linear infinite}
+@keyframes ants{to{stroke-dashoffset:-32}}
+.updoodle{width:56px;flex:none}
+.updoodle path{fill:none;stroke:var(--fg);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.drop:hover .updoodle{animation:updip 1s ease-in-out infinite}
+@keyframes updip{50%{translate:0 -5px}}
+.drop .dt{font-family:"Inter Tight",sans-serif;font-weight:700;font-size:20px;letter-spacing:-.01em}
+.drop .ds{font-family:"Space Mono",monospace;font-size:10.5px;color:var(--dim);margin-top:6px;letter-spacing:.03em}
+
+@media (max-width:1000px){
+  .pxcur{display:none}
+  .pxwin{position:relative;left:auto;top:auto;transform:none;opacity:1;pointer-events:auto;margin:10px auto 30px;width:min(540px,100%)}
+  .pxbody{grid-template-columns:1fr 1fr}
+  .scene{height:220px;width:94vw}
+  .flies{width:200px;left:-2%}
+  .handp{width:230px}
+  .drop{padding:20px 22px;gap:14px}
+  .hero2 .t{padding:0 6px}
+}
+@media (prefers-reduced-motion:reduce){
+  .rk .st,.st2{animation:none!important;stroke-dashoffset:0}
+  .rk .hg,.fb,.fb .wg,.pxcur,.spark2{animation:none!important;opacity:1}
+  .flies,.handp{transform:none!important}
+  .pxwin{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
+}
+
+
+/* ---- v4: elegant title ---- */
+.hero2 .t{font-weight:400;font-size:clamp(27px,3.8vw,53px);line-height:1.16;letter-spacing:-.012em;max-width:23em}
+.hero2 .t .nm{font-weight:500;letter-spacing:-.02em}
+.hero2 .t .it{font-family:"Fraunces",serif;font-style:italic;font-weight:400;letter-spacing:0}
+.hero2 .t .doo path{stroke-width:4}
+/* ---- v4: clothesline ---- */
+.rackwrap{width:min(1180px,96vw);margin-top:14px}
+.rk .line{transform-box:view-box;transform-origin:600px 150px;animation:trem 6.5s ease-in-out infinite}
+@keyframes trem{0%,100%{transform:translateY(0) rotate(0deg)}30%{transform:translateY(1.8px) rotate(.14deg)}64%{transform:translateY(-1.5px) rotate(-.12deg)}}
+.rk .hg{transform-origin:var(--ox,600px) var(--oy,150px);animation:flu var(--hd,6s) ease-in-out infinite,hgin .8s cubic-bezier(.3,1.4,.5,1) both var(--hdl,1.1s)}
+@keyframes flu{0%,100%{transform:rotate(-1.7deg)}45%{transform:rotate(2.3deg)}70%{transform:rotate(1.1deg)}}
+.rk .hg:hover{animation:flub 1.6s ease-in-out infinite,hgin 0s both}
+@keyframes flub{0%,100%{transform:rotate(-4.5deg)}50%{transform:rotate(4.5deg)}}
+.rk .wind{fill:none;stroke:var(--dim2);stroke-width:2;stroke-linecap:round;opacity:0;animation:windy 9s ease-in-out infinite}
+.rk .w2{animation-delay:4.5s}
+@keyframes windy{0%,54%,92%,100%{opacity:0;translate:0 0}62%{opacity:.55;translate:14px 0}80%{opacity:.3;translate:34px 0}}
+.tagcta text{font-size:20px}
+/* ---- v4: untangle scene ---- */
+.scene{height:310px;width:min(620px,94vw);margin:0 auto -10px}
+.scene .girl{width:100%;height:100%;overflow:visible}
+.messy path{stroke:var(--dim);opacity:calc(1.12 - var(--p,0)*1.35)}
+.tidy path{fill:none;stroke:url(#tgrad);stroke-width:3;stroke-linecap:round;stroke-dasharray:1;
+  stroke-dashoffset:calc(1.06 - var(--p,0)*1.06);opacity:calc(var(--p,0)*2)}
+.fworry{opacity:calc(1 - var(--p,0)*1.35)}
+.fcalm{opacity:calc(var(--p,0)*1.5 - .45)}
+.kick{transform-box:view-box;animation:kick 3.4s ease-in-out infinite}
+.kick.k2{animation-delay:.5s;animation-duration:3.9s}
+@keyframes kick{0%,100%{transform:rotate(0deg)}50%{transform:rotate(-7deg)}}
+.scene.touch .kick{animation-duration:1.1s}
+.scene .spark2{left:76%;top:10%}
+@media (max-width:1000px){.scene{height:250px}}
+@media (prefers-reduced-motion:reduce){
+  .rk .line,.rk .hg,.rk .wind,.kick{animation:none!important;opacity:1}
+  .messy path{opacity:0}.tidy path{stroke-dashoffset:0;opacity:1}.fworry{opacity:0}.fcalm{opacity:1}
+}
+
+
+/* ---- v5: editorial title ---- */
+.eyeb{display:flex;align-items:center;justify-content:center;gap:18px;font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.26em;color:var(--dim);margin:34px auto 0;max-width:900px}
+.eyeb::before,.eyeb::after{content:"";flex:0 1 150px;height:1px;background:var(--dim2)}
+.hero2 .t2{margin:20px auto 0;font-weight:400}
+.hero2 .t2 .g1{display:block;font-family:"Familjen Grotesk","Inter Tight",sans-serif;font-weight:600;font-size:clamp(38px,5.2vw,76px);line-height:1.02;letter-spacing:-.028em}
+.hero2 .t2 .g2{display:block;font-family:"Fraunces",serif;font-style:italic;font-weight:400;font-size:clamp(33px,4.5vw,66px);line-height:1.14;letter-spacing:-.01em;margin-top:.04em}
+.hero2 .t2 .pk{color:var(--pink);font-style:italic}
+.hero2 .t2 .doo{display:inline-block;width:1.35em;vertical-align:-.12em;margin:0 .05em}
+.hero2 .t2 .doo path{fill:none;stroke:var(--fg);stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}
+/* ---- v5: pencil clothesline ---- */
+.rk .st{stroke-width:2.7;opacity:.94}
+.rk .ghost{opacity:.28}
+.rk .ghost2{opacity:.6}
+.rk .ging path{fill:none;stroke:#FF8FC2;stroke-width:3.2;stroke-linecap:round;opacity:.75}
+.rk .bird{transform-box:view-box;transform-origin:1104px 128px;animation:bob 4.2s ease-in-out infinite 2.4s}
+@keyframes bob{0%,86%,100%{transform:translateY(0)}90%{transform:translateY(-2.5px)}94%{transform:translateY(.5px)}}
+.tagcta text{font-size:19px}
+/* ---- v5: word-tangle scene ---- */
+.scene{height:330px;width:min(640px,94vw)}
+.messy path,.tidy path{stroke:none!important;fill:none}
+.wtx{font-family:"Space Mono",monospace;font-size:11px;fill:var(--dim);letter-spacing:.4px}
+.messy{opacity:calc(1.1 - var(--p,0)*1.4)}
+.rtx{font-family:"Space Mono",monospace;font-size:11.5px;fill:url(#tgrad);letter-spacing:2.6px}
+.tidy{opacity:calc(var(--p,0)*1.7 - .3);transform-box:view-box;transform-origin:280px 168px;transform:scale(calc(.88 + var(--p,0)*.12))}
+.spin{transform-box:view-box;transform-origin:280px 168px}
+.spin.s1{animation:spinA 80s linear infinite}
+.spin.s2{animation:spinB 110s linear infinite}
+.spin.s3{animation:spinA 140s linear infinite}
+@keyframes spinA{to{transform:rotate(360deg)}}
+@keyframes spinB{to{transform:rotate(-360deg)}}
+@media (max-width:1000px){
+  .scene{height:260px}
+  .wtx{font-size:10px}.rtx{font-size:10.5px;letter-spacing:2px}
+  .eyeb::before,.eyeb::after{flex-basis:40px}
+}
+@media (prefers-reduced-motion:reduce){
+  .spin,.rk .bird{animation:none!important}
+  .messy{opacity:0}.tidy{opacity:1;transform:scale(1)}
+}
+
+
+/* ---- v6: colour accents (declared after .st so they win) ---- */
+.rk .ac-p{stroke:#FF8FC2}
+.rk .ac-g{stroke:#A9C77F}
+.rk .ac-b{stroke:#7FB4E6}
+.rk .ac-y{stroke:#F2D558;stroke-width:3}
+.rk .ac-bl{stroke:#5D93D1;stroke-width:3}
+.rk .ac-bu{stroke:var(--butter)}
+/* ---- v6: travelling gust ---- */
+.rk .hg{animation:flu2 14s ease-in-out infinite,hgin .8s cubic-bezier(.3,1.4,.5,1) both var(--hdl,1.1s);animation-delay:var(--gd,0s),var(--hdl,1.1s)}
+@keyframes flu2{
+  0%,100%{transform:rotate(-1.2deg)}
+  18%{transform:rotate(1.8deg)}
+  36%{transform:rotate(-1.4deg)}
+  54%{transform:rotate(1.2deg)}
+  70%{transform:rotate(-1deg)}
+  78%{transform:rotate(6.5deg)}
+  86%{transform:rotate(-3.8deg)}
+  93%{transform:rotate(2deg)}
+}
+.rk .wind{animation:windy2 14s ease-in-out infinite}
+.rk .w1{animation-delay:0s}.rk .w3{animation-delay:.45s}.rk .w2{animation-delay:.9s}
+@keyframes windy2{0%,66%,94%,100%{opacity:0;translate:0 0}74%{opacity:.6;translate:16px 0}86%{opacity:.25;translate:40px 0}}
+.rk .bird{animation:bob2 14s ease-in-out infinite}
+@keyframes bob2{0%,78%,100%{transform:translateY(0)}82%{transform:translateY(-6px)}86%{transform:translateY(-1px)}90%{transform:translateY(-3px)}94%{transform:translateY(0)}}
+/* ---- v6: prominent CTA ---- */
+.rk .tagcta{filter:drop-shadow(0 0 14px rgba(237,228,162,.32));animation:tagglow 3.2s ease-in-out infinite,flu2 14s ease-in-out infinite,hgin .8s cubic-bezier(.3,1.4,.5,1) both var(--hdl,1.1s);animation-delay:0s,var(--gd,0s),var(--hdl,1.1s)}
+@keyframes tagglow{50%{filter:drop-shadow(0 0 26px rgba(237,228,162,.62))}}
+.tagcta text{font-size:23px}
+.rk .tagcta:hover{filter:drop-shadow(0 0 30px rgba(237,228,162,.75));animation:flub 1.6s ease-in-out infinite,hgin 0s both}
+.note{font-family:"Gochi Hand",cursive;font-size:23px;fill:var(--butter)}
+.anno{opacity:0;animation:hgin .8s ease both 2.1s}
+/* ---- v6: sticky untangle storytelling ---- */
+.close{padding:40px 36px 110px}
+.stickzone{position:relative;height:170vh}
+.cin.pin{position:sticky;top:max(14px,calc(50vh - 425px))}
+@media (max-width:1000px){
+  .stickzone{height:150vh}
+  .cin.pin{top:max(8px,calc(50vh - 360px))}
+}
+@media (prefers-reduced-motion:reduce){
+  .stickzone{height:auto}
+  .cin.pin{position:static}
+  .rk .hg,.rk .wind,.rk .bird,.tagcta,.anno{animation:none!important;opacity:1}
+}
+
+
+/* ---- v7: exquisite-corpse strip ---- */
+.corpse{position:relative;width:min(1040px,95vw);margin:34px auto 0}
+.strips{position:relative;display:flex;gap:10px;justify-content:center;padding:0 26px}
+.col{display:flex;flex-direction:column;gap:0;border-radius:10px;overflow:hidden}
+.seg{display:block;width:clamp(58px,13vw,186px);height:clamp(52px,11.7vw,168px);padding:0;border:0;background:#0d0c0b;cursor:pointer;overflow:hidden;opacity:0;animation:segin .7s cubic-bezier(.3,1.3,.5,1) both var(--si,0s)}
+.seg img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s}
+.seg:hover img{transform:scale(1.06)}
+.seg:focus-visible{outline:2px solid var(--pink);outline-offset:-2px;z-index:3}
+@keyframes segin{from{opacity:0;translate:0 26px}to{opacity:1;translate:0 0}}
+.seg.snip{animation:snip .5s ease}
+@keyframes snip{0%{transform:translateX(0)}38%{transform:translateX(-16px) rotate(-1.6deg);filter:brightness(1.6)}62%{transform:translateX(12px);filter:brightness(1.2)}100%{transform:translateX(0)}}
+.cut{position:absolute;left:-4px;right:-4px;border-top:2px dashed #ffffff5e;pointer-events:none;z-index:2}
+.cut.c1{top:33.33%}
+.cut.c2{top:66.66%}
+.scis{position:absolute;width:26px;top:-14px;left:-32px}
+.scis path{fill:none;stroke:var(--fg);stroke-width:1.8;stroke-linecap:round}
+.scis.flip{left:auto;right:-32px;transform:scaleX(-1)}
+.bub{position:absolute;top:-46px;left:5%;z-index:4;font-family:"Gochi Hand",cursive;font-size:17px;color:var(--fg);border:2px solid var(--fg);border-radius:14px;padding:6px 14px;background:var(--bg);rotate:-2deg}
+.bub::after{content:"";position:absolute;left:26px;bottom:-11px;width:12px;height:12px;background:var(--bg);border-right:2px solid var(--fg);border-bottom:2px solid var(--fg);transform:rotate(55deg) skewX(20deg)}
+.hlt{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-1.6deg);z-index:5;
+  background:var(--butter);color:#241f10;font-family:"Gochi Hand",cursive;font-size:clamp(19px,2.4vw,30px);
+  padding:12px 30px;box-shadow:0 14px 40px #000000b0, 0 0 24px rgba(237,228,162,.35);white-space:nowrap;
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1),box-shadow .3s}
+.hlt:hover{transform:translate(-50%,-50%) rotate(.8deg) scale(1.06);box-shadow:0 18px 50px #000000c9, 0 0 38px rgba(237,228,162,.6)}
+.corpsecap{text-align:center;font-size:10.5px;color:var(--dim);letter-spacing:.06em;margin-top:16px}
+/* ---- v7: cat's cradle ---- */
+.scene{width:100vw;margin-left:calc(50% - 50vw);height:auto;max-width:none}
+.cradle{width:100%;height:auto;display:block;overflow:visible}
+.lh,.rh{transform-box:view-box}
+.str{font-family:"Space Mono",monospace;font-size:15.5px;letter-spacing:3px;opacity:0;transition:opacity .8s ease .5s}
+.scene.on .str{opacity:1}
+.str1{fill:var(--fg)}
+.str2{fill:var(--butter)}
+.str3{fill:var(--pink)}
+.cin.pin{max-width:none;width:min(1180px,96vw)}
+.scene .spark2{left:49%;top:38%}
+@media (max-width:1000px){
+  .str{font-size:26px;letter-spacing:2px}
+  .bub{font-size:14px;top:-40px}
+  .hlt{padding:9px 18px}
+  .corpsecap{padding:0 20px}
+  .strips{padding:0 6px;gap:6px}
+  .seg{width:16.5vw;height:14.8vw}
+  .cut{left:0;right:0}
+  .scis{width:16px;left:-4px;top:-9px}
+  .scis.flip{left:auto;right:-4px}
+}
+@media (prefers-reduced-motion:reduce){
+  .seg{animation:none;opacity:1}
+  .seg.snip{animation:none}
+}
+
+
+/* ---- v8: torn collage figures ---- */
+.collage{position:relative;width:min(1180px,96vw);margin:30px auto 0}
+.figs{display:flex;gap:clamp(6px,2vw,26px);justify-content:center;align-items:flex-end}
+.fig{width:clamp(62px,16.5vw,232px);background:none;border:0;padding:0;cursor:pointer;
+  rotate:var(--fr,0deg);opacity:0;
+  animation:figin .8s cubic-bezier(.3,1.3,.5,1) both var(--fi,.2s), figfloat 7.5s ease-in-out infinite var(--fd,0s);
+  transition:scale .35s cubic-bezier(.34,1.56,.64,1)}
+.fig:hover{scale:1.045;z-index:2}
+.fig:focus-visible{outline:2px solid var(--pink);outline-offset:4px}
+.fig img{width:100%;height:auto;display:block;border-radius:8px}
+@keyframes figin{from{opacity:0;scale:.86}to{opacity:1;scale:1}}
+@keyframes figfloat{0%,100%{translate:0 0}50%{translate:0 -10px}}
+.fig.snip{animation:snip .5s ease, figfloat 7.5s ease-in-out infinite var(--fd,0s)}
+.collage .hlt{top:54%}
+.collage .bub{top:-40px;left:3%}
+/* ---- v8: cradle strings ---- */
+.strln{fill:none;stroke:var(--dim2);stroke-width:1.7}
+.str{font-size:15px}
+.str3{fill:#c9c3b2}
+.str4{fill:var(--pink)}
+@media (max-width:1000px){
+  .figs{gap:6px}
+  .fig{width:17.5vw}
+  .collage .bub{font-size:13px;top:-36px}
+}
+@media (prefers-reduced-motion:reduce){
+  .fig{animation:none;opacity:1}
+}
+
+
+/* ---- v9: quiet hero, girl restored ---- */
+.heroCta{text-align:center;margin:46px 0 6px}
+.hlts{position:relative;left:auto;top:auto;display:inline-flex;align-items:center;gap:.5em;
+  padding:14px 28px 14px 42px;border-radius:6px;transform:rotate(-1.5deg);
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1),box-shadow .3s}
+.hlts::before{content:"";position:absolute;left:17px;top:50%;transform:translateY(-50%);
+  width:13px;height:13px;border-radius:50%;background:var(--bg);
+  box-shadow:inset 0 0 0 2px rgba(36,31,16,.55), 0 0 0 1px rgba(237,228,162,.35)}
+.hlts::after{content:"";position:absolute;inset:5px 6px;border:1.5px dashed rgba(36,31,16,.32);border-radius:4px;pointer-events:none}
+.hltarr{display:inline-block;transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+.hlts:hover{transform:rotate(.6deg) scale(1.05) translateY(-3px);box-shadow:0 20px 52px #000000c9, 0 0 40px rgba(237,228,162,.6)}
+.hlts:hover .hltarr{transform:translate(4px,-4px)}
+.hlts:active{transform:rotate(-1deg) scale(.99)}
+@media (prefers-reduced-motion:reduce){.hlts:hover .hltarr{transform:none}}
+.scene{width:min(640px,94vw);height:330px;margin:0 auto -10px;max-width:none}
+.cin.pin{width:auto;max-width:36em}
+.scene .spark2{left:76%;top:10%}
+@media (max-width:1000px){.scene{height:260px}}
+
+
+/* ---- v10: pixel case cards ---- */
+.track2{gap:36px;animation-duration:72s}
+.pcard{margin:0;flex:none;border:3px solid var(--fg);background:#0e0d0b;box-shadow:9px 9px 0 #ffffff1c}
+.pbar2{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:3px solid var(--fg);background:#171512}
+.pttl{font-family:"Press Start 2P",monospace;font-size:7px;color:var(--butter)}
+.pdots{display:flex;gap:5px}
+.pdots i{width:9px;height:9px;background:#3a362e;border:2px solid var(--fg)}
+.pdots i.x{background:var(--pink)}
+.pcard img{display:block;height:300px;width:auto}
+.pcard figcaption{display:flex;gap:7px;padding:9px 10px;border-top:3px solid var(--fg);background:var(--card);backdrop-filter:none;position:static}
+.pchipx{font-family:"Space Mono",monospace;font-size:9.5px;letter-spacing:.04em;padding:4px 9px;border:2px solid #ffffff30;color:var(--fg)}
+.pchipx.th{color:var(--pink);border-color:#ff8fc24d}
+.pcard:hover{translate:0 -5px;transition:translate .3s}
+@media (max-width:1000px){.pcard img{height:210px}.track2{gap:20px}}
+
+
+/* ---- v11: unified type — Familjen Grotesk everywhere, medium weights ---- */
+body,button,input,textarea{font-family:"Familjen Grotesk",system-ui,sans-serif}
+.brand,.nav .lg{font-weight:600}
+.hero2 .t2 .g1{font-weight:500}
+.chead h2{font-weight:500;letter-spacing:-.02em}
+.flow .hd h2{font-weight:500;letter-spacing:-.02em}
+.note h4{font-weight:500}
+.close h3{font-weight:500;letter-spacing:-.02em}
+.drop .dt{font-family:"Familjen Grotesk",sans-serif;font-weight:500}
+.chead .cr p, .note p, .say, p{font-weight:400}
+.pill,.go{font-weight:500}
+b,strong{font-weight:600}
+
+/* WORKFLOW loose table */
+.flow{position:relative;max-width:min(1720px,95vw);margin:150px auto 0;height:560px;padding:0 clamp(40px,4vw,64px)}
+.flow .hd{position:absolute;left:44px;top:40px;max-width:15em;z-index:5}
+.flow .hd .mono{color:var(--dim);font-size:12px;letter-spacing:.06em}
+.flow .hd h2{font-weight:800;font-size:clamp(28px,3.6vw,42px);line-height:.98;letter-spacing:-.03em;margin:10px 0 0}
+.flow .hd h2 .serif{font-style:italic;font-weight:400;color:var(--pink)}
+#lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+.note{position:absolute;z-index:4;width:200px}
+.note .n{font-family:"Space Mono",monospace;font-size:11px;color:var(--pink);letter-spacing:.06em}
+.note h4{font-weight:700;font-size:18px;margin:4px 0 5px}
+.note p{margin:0;font-size:13px;line-height:1.5;color:var(--dim)}
+.note .obj{width:74px;margin-bottom:12px}
+.note .obj img{width:100%;filter:drop-shadow(0 14px 18px rgba(0,0,0,.7))}
+
+/* CLOSE */
+.close{position:relative;max-width:min(1720px,95vw);margin:0 auto;padding:40px clamp(40px,4vw,64px) 150px}
+.close .in{max-width:19em;margin-left:10%}
+.close .mono{font-size:11px;color:var(--dim);letter-spacing:.08em}
+.close h3{font-weight:800;font-size:clamp(30px,4.4vw,52px);line-height:1;letter-spacing:-.03em;margin:14px 0 26px}
+.close h3 .serif{font-style:italic;font-weight:400;color:var(--pink)}
+
+/* nav */
+.nav{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:40;display:flex;gap:6px;align-items:center;
+  background:#14131266;backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:999px;padding:6px 6px 6px 16px}
+.nav .lg{font-weight:700;font-size:13.5px;margin-right:6px}
+.nav a{font-size:12.5px;color:var(--dim);padding:8px 12px;border-radius:999px}
+.nav a:hover{color:var(--fg)}
+.nav .go{background:var(--butter);color:#241f10;padding:9px 16px;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer}
+
+@media (prefers-reduced-motion:reduce){.ob,.fig{animation:none}}
+@media (max-width:1000px){
+  .hero{height:auto;padding-bottom:30px}
+  .head{position:relative;left:auto;top:auto;padding:20px 30px;max-width:none}
+  .stage{position:relative;height:520px;transform:scale(.82);transform-origin:top center}
+  .flow{height:auto} .flow .hd{position:relative;left:auto;top:auto;margin-bottom:24px}
+  .note{position:relative!important;left:auto!important;top:auto!important;width:100%;max-width:300px;margin:0 0 24px}
+  #lines{display:none} .nav a{display:none}
+}
+
+/* v11b: weight overrides at end of sheet */
+.flow .hd h2{font-weight:500;letter-spacing:-.02em}
+.close h3{font-weight:500;letter-spacing:-.02em}
+.note h4{font-weight:500}
+
+/* ---- v12: reels + waking girl ---- */
+.pxreel{height:150px;overflow:hidden;border:2px solid var(--fg);background:#0b0a09;margin-bottom:9px}
+.reel{display:flex;flex-direction:column}
+.reel img{width:100%;height:auto;image-rendering:pixelated;display:block;border:0!important;margin:0 0 6px!important}
+.reel.up{animation:reelU 12s linear infinite}
+.reel.down{animation:reelD 15s linear infinite}
+@keyframes reelU{to{translate:0 -50%}}
+@keyframes reelD{from{translate:0 -50%}to{translate:0 0}}
+.pxwin:hover .reel{animation-play-state:paused}
+/* girl v3 */
+.wtx{font-family:"Gochi Hand",cursive;font-size:15px;letter-spacing:.5px;fill:var(--dim)}
+.wtx.w2{font-size:13.5px}.wtx.w3{font-size:14.5px;fill:#a19c8d}
+.messy{opacity:calc(1.08 - var(--p,0)*1.45)}
+.messy text{animation:mjit 3s ease-in-out infinite}
+.messy text:nth-child(2){animation-delay:.7s}.messy text:nth-child(3){animation-delay:1.4s}
+@keyframes mjit{0%,100%{translate:0 0}25%{translate:.9px -.7px}50%{translate:-.7px .6px}75%{translate:.5px .9px}}
+.tidy{opacity:calc(var(--p,0)*1.7 - .35);transform-box:view-box;transform-origin:280px 132px;transform:scale(calc(.9 + var(--p,0)*.1))}
+.spin{transform-origin:280px 132px}
+.poseA{opacity:calc(1 - var(--p,0)*1.6)}
+.poseB{opacity:calc(var(--p,0)*1.8 - .62)}
+.st3{fill:none;stroke:var(--fg);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.st3.thin{stroke-width:2}
+.bulb{opacity:calc(var(--p,0)*1.8 - .72)}
+.bulb .glowc,.bulb .rays{opacity:0}
+.scene.touch .bulb .glowc{animation:blinkon 1s steps(2,jump-none) forwards}
+.scene.touch .bulb .rays{animation:blinkon .9s steps(2,jump-none) forwards .25s}
+.scene.touch .bulb .rays .st3{stroke:var(--butter)}
+.scene.touch .bulb circle.st3{stroke:var(--butter)}
+@keyframes blinkon{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){
+  .reel,.messy text{animation:none!important}
+  .messy{opacity:0}.tidy{opacity:1}.poseA{opacity:0}.poseB{opacity:1}.bulb,.bulb .glowc,.bulb .rays{opacity:1}
+}
+
+/* v13: girl moved below the dropzone */
+.cin.pin .scene{margin:26px auto 0}
+
+/* ---- v14: editorial closing composition ---- */
+.cin.pin{width:min(1080px,94vw);max-width:none;display:grid;grid-template-columns:minmax(280px,.92fr) 1.08fr;column-gap:28px;align-items:end;text-align:left}
+.ctext{grid-column:1;padding-bottom:40px}
+.ctext .mono{display:block}
+.close h3{margin:12px 0 14px}
+.csub{margin:0 0 6px;letter-spacing:.16em}
+.cin.pin .drop{margin:26px 0 0}
+.cin.pin .scene{grid-column:2;justify-self:end;width:min(560px,100%);height:auto;margin:0 0 calc(min(560px,100%) * 0);margin-bottom:calc(min(560px,46vw) * -0.139)}
+.tlwrap{grid-column:1/-1;position:relative;margin-top:-2px;height:46px}
+.tline{position:absolute;inset:0;width:100%;height:100%}
+.tline path{fill:none;stroke:var(--fg);stroke-width:2.6;stroke-linecap:round}
+.tline .tg{stroke-width:1.5;opacity:.28}
+.cup{position:absolute;left:7%;bottom:20px;width:52px}
+.ck{fill:none;stroke:var(--fg);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.ck.thin{stroke-width:1.8}
+.steam path{opacity:.5;animation:steam 3.6s ease-in-out infinite}
+.steam path:nth-child(2){animation-delay:1.2s}
+@keyframes steam{0%,100%{translate:0 0;opacity:.15}40%{opacity:.55}80%{translate:0 -6px;opacity:0}}
+.cin.pin{top:max(14px,calc(50vh - 300px))}
+@media (max-width:1000px){
+  .cin.pin{grid-template-columns:1fr;column-gap:0}
+  .ctext{grid-column:1;padding-bottom:8px}
+  .cin.pin .scene{grid-column:1;justify-self:center;width:min(480px,94vw);margin-bottom:calc(min(480px,94vw) * -0.139)}
+  .cup{left:4%;width:40px;bottom:16px}
+}
+
+/* ---- v15: staged, faster metamorphosis ---- */
+.stickzone{height:130vh}
+.messy{opacity:calc(1 - var(--p,0)*2)}
+.poseA{opacity:calc((0.62 - var(--p,0)) * 14)}
+.poseB{opacity:calc((var(--p,0) - 0.56) * 14)}
+.tidy{opacity:calc((var(--p,0) - 0.52) * 3.2);transform-origin:300px 118px;transform:scale(calc(.92 + var(--p,0)*.08))}
+.spin{transform-origin:300px 118px}
+.bulb{opacity:calc((var(--p,0) - 0.68) * 5)}
+@media (max-width:1000px){.stickzone{height:120vh}}
+@media (prefers-reduced-motion:reduce){.stickzone{height:auto}}
+
+/* ---- v15: clean waking-girl scene ---- */
+.girl .ink{fill:none;stroke:var(--fg);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.girl .ink.tn{stroke-width:1.7}
+.girl .dimmed{stroke:var(--dim)}
+.wtx{font-family:"Gochi Hand",cursive;font-size:15px;fill:var(--dim)}
+.wtx.w2{font-size:14px}.wtx.w3{font-size:14px}.wtx.sm{font-size:11px}
+.rtx{font-family:"Space Mono",monospace;font-size:12px;letter-spacing:2px;fill:url(#tgrad)}
+.rtx.r1{font-size:11px}.rtx.r3{font-size:13px}
+
+.messy{opacity:calc(1.12 - var(--p,0)*1.9)}
+.messy .dimmed{animation:mdrift 5s ease-in-out infinite}
+.messy .dimmed:nth-child(2){animation-delay:1s}.messy .dimmed:nth-child(3){animation-delay:2s}
+.messy text{animation:mjit 3.4s ease-in-out infinite}
+.messy text:nth-of-type(2){animation-delay:.9s}.messy text:nth-of-type(3){animation-delay:1.8s}
+@keyframes mdrift{0%,100%{transform:translate(0,0) rotate(0)}50%{transform:translate(2px,-2px) rotate(.6deg)}}
+@keyframes mjit{0%,100%{translate:0 0}30%{translate:1px -1px}60%{translate:-1px 1px}}
+
+.tidy{opacity:calc(var(--p,0)*2 - .55);transform-box:view-box;transform-origin:310px 118px;transform:scale(calc(.92 + var(--p,0)*.08))}
+.spin{transform-box:view-box;transform-origin:310px 118px}
+.spin.s1{animation:spinA 90s linear infinite}
+.spin.s2{animation:spinB 120s linear infinite}
+.spin.s3{animation:spinA 150s linear infinite}
+@keyframes spinA{to{transform:rotate(360deg)}}
+@keyframes spinB{to{transform:rotate(-360deg)}}
+
+.poseA{opacity:calc((0.62 - var(--p,0))*2)}
+.poseA .zzz{animation:zfloat 3s ease-in-out infinite}
+@keyframes zfloat{0%,100%{opacity:.3;translate:0 0}50%{opacity:.7;translate:2px -4px}}
+.poseB{opacity:calc((var(--p,0) - 0.25)*2.3)}
+
+.bulb{opacity:calc(var(--p,0)*2.4 - 1.35)}
+.bulb .glowc,.bulb .rays{opacity:0}
+.bulb .bulbink{stroke:var(--dim2)}
+.scene.touch .bulb .bulbink{stroke:var(--butter);transition:stroke .4s ease .2s}
+.scene.touch .bulb .glowc{animation:blinkon .7s steps(2,jump-none) forwards}
+.scene.touch .bulb .rays{animation:blinkon .6s steps(2,jump-none) forwards .2s}
+@keyframes blinkon{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){
+  .spin,.messy .dimmed,.messy text,.poseA .zzz{animation:none!important}
+  .messy{opacity:0}.tidy{opacity:1}.poseA{opacity:0}.poseB{opacity:1}.bulb,.bulb .glowc,.bulb .rays{opacity:1}.bulb .bulbink{stroke:var(--butter)}
+}
+
+/* ---- v16: thought-tornado closing ---- */
+.gtx{font-family:"Gochi Hand",cursive}
+.mtx{font-family:"Space Mono",monospace;letter-spacing:1.5px}
+.spine{stroke:#5a564b;stroke-dasharray:1;stroke-dashoffset:calc(max(0, 1 - var(--p,0)*1.15))}
+.tring{opacity:calc((var(--p,0) - var(--rt,0))*4.5);transform-box:view-box}
+.spin.sp0{animation:spinA 110s linear infinite}
+.spin.sp1{animation:spinB 140s linear infinite}
+.spin.sp2{animation:spinA 170s linear infinite}
+.dood{opacity:calc((var(--p,0) - var(--dt,0))*4);animation:dfloat 6s ease-in-out infinite}
+.dood.d2{animation-delay:2.4s}
+@keyframes dfloat{0%,100%{translate:0 0}50%{translate:0 -7px}}
+.gA{animation:shiver .9s ease-in-out infinite;transform-box:view-box;transform-origin:290px 560px}
+@keyframes shiver{0%,100%{translate:0 0;rotate:0deg}25%{translate:.7px -.4px;rotate:.25deg}50%{translate:-.6px .4px;rotate:-.2deg}75%{translate:.4px .5px;rotate:.15deg}}
+.dropwrap{position:absolute;top:-54px;left:0;right:0;display:flex;justify-content:center;z-index:3;
+  transform:translateY(calc((1 - min(1, var(--p,0)*1.3)) * 130px));
+  opacity:calc(var(--p,0)*2.4 - 1.05)}
+.dropwrap .drop{margin:0;padding:16px 26px}
+.scene.touch .dropwrap .drop{animation:crownbob 4.5s ease-in-out infinite .4s}
+@keyframes crownbob{0%,100%{translate:0 0}50%{translate:0 -6px}}
+.cin.pin .scene{position:relative;width:min(500px,100%);margin-bottom:calc(min(500px,46vw) * -0.062);justify-self:end}
+.ctext{padding-bottom:120px}
+.cin.pin{top:max(10px,calc(50vh - 380px))}
+@media (max-width:1000px){
+  .cin.pin .scene{width:min(430px,92vw);justify-self:center;margin-bottom:calc(min(430px,92vw) * -0.062);margin-top:70px}
+  .ctext{padding-bottom:0}
+  .dropwrap{top:-64px}
+}
+@media (prefers-reduced-motion:reduce){
+  .spin,.dood,.gA,.scene.touch .dropwrap .drop{animation:none!important}
+  .tring,.dood{opacity:1}.spine{stroke-dashoffset:0}.dropwrap{transform:none;opacity:1}
+}
+
+/* ---- v17: dock rides the tornado ---- */
+.nav.crowned{animation:crownbob 4.5s ease-in-out infinite .3s}
+.ctext{padding-bottom:60px}
+@media (max-width:1000px){.ctext{padding-bottom:0}}
+
+/* ---- v18: the tornado lifts the whole closing content ---- */
+.cin.pin{display:flex;flex-direction:column;align-items:center;width:min(780px,94vw);text-align:center;top:max(8px,calc(50vh - 435px))}
+.ctext{padding:0;position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;
+  transform:translateY(calc((1 - min(1, var(--p,0)*1.25)) * 110px));
+  opacity:calc(0.15 + var(--p,0)*1.1)}
+.close h3{margin:10px 0 12px;text-align:center}
+.csub{text-align:center}
+.cin.pin .drop{margin:22px auto 0}
+.cin.pin .scene{margin-top:-48px;z-index:1;justify-self:auto;align-self:center}
+.cin.pin.lifted .ctext{animation:crownbob 4.6s ease-in-out infinite .3s}
+.tlwrap{margin-top:-2px;width:100%}
+@media (max-width:1000px){
+  .cin.pin{top:max(6px,calc(50vh - 400px))}
+  .cin.pin .scene{margin-top:-40px}
+  .ctext{transform:translateY(calc((1 - min(1, var(--p,0)*1.25)) * 70px))}
+}
+
+/* ---- v19: softer, pixel-stepped case cards ---- */
+.pcard{border:2px solid rgba(241,237,225,.5);background:#0e0d0b;box-shadow:none;
+  filter:drop-shadow(6px 6px 0 rgba(255,255,255,.07));
+  clip-path:polygon(0 10px,5px 10px,5px 5px,10px 5px,10px 0,
+    calc(100% - 10px) 0,calc(100% - 10px) 5px,calc(100% - 5px) 5px,calc(100% - 5px) 10px,100% 10px,
+    100% calc(100% - 10px),calc(100% - 5px) calc(100% - 10px),calc(100% - 5px) calc(100% - 5px),calc(100% - 10px) calc(100% - 5px),calc(100% - 10px) 100%,
+    10px 100%,10px calc(100% - 5px),5px calc(100% - 5px),5px calc(100% - 10px),0 calc(100% - 10px))}
+.pbar2{border-bottom:2px solid rgba(241,237,225,.38);padding:7px 12px}
+.pcard figcaption{border-top:2px solid rgba(241,237,225,.38)}
+.pcard img{height:248px}
+.pdots i{border-width:2px;border-color:rgba(241,237,225,.55)}
+.pchipx{border-width:1.5px;border-color:#ffffff26}
+.pchipx.th{border-color:#ff8fc23d}
+@media (max-width:1000px){.pcard img{height:178px}}
+
+/* ---- v20: true 1-bit pixel frame for case cards ---- */
+.pcard{border:16px solid transparent;clip-path:none;box-shadow:none;
+  border-image:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAs0lEQVR4nO2aPQqAMAxGrXR38ADu3v8s7h7AwRu4RzCUEl8D3xtVNI/8oK1lcriv8/CuiWRZt/3r/PxXIFFIgKbYA7bmvRqMxosnfQYkQFPpOd+KjTd9BiRAU1rnfnTPtD4/fQYkQFN7b9D7rtTbU+kzIAEaCdBIgEYCNBKgkQCNBGi6vwfodaX0GZAAzWtdyDLa/oAlfQYkQFNtjdNz3UN7ZKORXuC1T2yhe0L/SoxOeoEHzLY2uHd4GiQAAAAASUVORK5CYII=") 16 repeat;
+  image-rendering:pixelated;background:#0c0b0a;
+  filter:drop-shadow(5px 5px 0 rgba(255,255,255,.06))}
+.pbar2{border-bottom:0;position:relative;background:transparent;padding:2px 4px 8px}
+.pbar2::after{content:"";position:absolute;left:2px;right:2px;bottom:0;height:2px;
+  background:repeating-linear-gradient(90deg,rgba(241,237,225,.5) 0 4px,transparent 4px 8px)}
+.pcard figcaption{border-top:0;position:relative;background:transparent;padding:10px 4px 2px}
+.pcard figcaption::before{content:"";position:absolute;left:2px;right:2px;top:0;height:2px;
+  background:repeating-linear-gradient(90deg,rgba(241,237,225,.5) 0 4px,transparent 4px 8px)}
+.pcard img{margin:6px 0}
+.pdots i{border:0;width:8px;height:8px;background:rgba(241,237,225,.35)}
+.pdots i.x{background:var(--pink)}
+
+/* ---- v21: fine, elegant pixel frame ---- */
+.pcard{border:8px solid transparent;
+  border-image:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAbElEQVR4nGNkQAMf3z5cgS6GDfALy0dgUw8ThwEmYgyjCvj49uEKYl1Pijk09wEjzDb0MEUPS0IAlzk09wELugCpLiekj+Y+GLVg1IJRgKUsohagW1mEYQG59QIufaM1GkHAiM0FxGgcNK0KACCrUPvraVL6AAAAAElFTkSuQmCC") 8 repeat;
+  filter:drop-shadow(3px 3px 0 rgba(255,255,255,.045));
+  background:#0b0a09}
+.pbar2{padding:4px 6px 9px}
+.pbar2::after{left:4px;right:4px;height:1px;
+  background:repeating-linear-gradient(90deg,rgba(241,237,225,.35) 0 2px,transparent 2px 7px)}
+.pcard figcaption{padding:11px 6px 4px}
+.pcard figcaption::before{left:4px;right:4px;height:1px;
+  background:repeating-linear-gradient(90deg,rgba(241,237,225,.35) 0 2px,transparent 2px 7px)}
+.pdots i{width:6px;height:6px;background:rgba(241,237,225,.28)}
+.pdots i.x{background:rgba(255,143,194,.8)}
+.pcard img{margin:8px 0}
+.pttl{font-size:6.5px;color:rgba(237,228,162,.85)}
+
+/* v21b: force dash repeat on edges */
+.pcard{border-image-repeat:repeat}
+
+/* ---- v22: poch-style finale ---- */
+/* rings burst away when the girl wakes */
+.scene.touch .tring{animation:ringout .9s cubic-bezier(.5,0,.8,.4) forwards;animation-delay:calc(var(--rt,0)*.9s)}
+@keyframes ringout{0%{opacity:1;translate:0 0;scale:1}100%{opacity:0;translate:0 -110px;scale:1.28}}
+.scene.touch .spine{transition:opacity .5s ease .3s;opacity:0}
+.scene.touch .dood{animation:doodout .7s ease forwards;animation-delay:calc(var(--dt,0)*.8s)}
+@keyframes doodout{to{opacity:0;translate:0 -60px;scale:.7}}
+/* girl: from shiver to a springy wake-up bounce */
+.scene.touch .gA{animation:gjoy 1.1s cubic-bezier(.34,1.56,.64,1) .25s both,gbob 3.2s ease-in-out 1.35s infinite}
+@keyframes gjoy{0%{translate:0 0;rotate:0deg}30%{translate:0 -26px;rotate:-2.5deg}55%{translate:0 4px;rotate:1.4deg}75%{translate:0 -8px}100%{translate:0 0;rotate:0deg}}
+@keyframes gbob{0%,100%{translate:0 0;rotate:0deg}50%{translate:0 -7px;rotate:.8deg}}
+/* joy sparks around her head */
+.joy path{fill:var(--butter);opacity:0;transform-box:fill-box;transform-origin:center}
+.joy .jp{fill:var(--pink)}
+.scene.touch .joy path{animation:pop .55s cubic-bezier(.34,1.7,.6,1) forwards var(--jd,1.1s),tw 2.4s ease-in-out infinite calc(var(--jd,1.1s) + .55s)}
+/* drop CTA lands with a squash bounce */
+.cin.pin.lifted .drop{animation:landb .8s cubic-bezier(.3,1.5,.5,1) both}
+@keyframes landb{0%{scale:1 1}35%{scale:1.06 .92}60%{scale:.97 1.04}100%{scale:1 1}}
+/* marquee tilts with scroll velocity */
+.mq{will-change:transform}
+/* ---- v24: form finale ---- */
+.fin{width:min(600px,92vw);margin:0 auto;text-align:center}
+.finh{font-family:"Familjen Grotesk",sans-serif;font-weight:500;font-size:clamp(30px,4.3vw,52px);letter-spacing:-.03em;line-height:1.04;margin:0 0 18px;text-wrap:balance}
+.finh .serif{font-style:italic;font-weight:400;color:var(--pink)}
+.finh .findim{display:block;margin-top:12px;font-family:"Fraunces",serif;font-style:italic;font-weight:400;color:var(--dim);font-size:.56em;letter-spacing:0}
+.finsub{font-family:"Gochi Hand",cursive;font-size:16.5px;letter-spacing:.01em;color:var(--dim);margin:0 0 44px}
+.finform{text-align:left}
+.ff{display:flex;flex-direction:column;gap:7px;margin-bottom:26px}
+.ff .fk{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);transition:color .2s}
+.ff:focus-within .fk{color:var(--pink)}
+.ff input,.ff select{appearance:none;background:transparent;border:0;border-bottom:1.5px solid #ffffff26;border-radius:0;
+  font-family:"Familjen Grotesk",sans-serif;font-size:16px;color:var(--fg);padding:8px 2px 10px;transition:border-color .25s}
+.ff input::placeholder{color:#565349}
+.ff select{cursor:pointer;color:var(--fg)}
+.ff select:invalid{color:#565349}
+.ff select option{background:var(--card);color:var(--fg)}
+.ff input:focus,.ff select:focus{outline:none;border-bottom-color:var(--pink);box-shadow:0 3px 14px -7px rgba(255,143,194,.75)}
+.ff.bad input{border-bottom-color:var(--pink);animation:ffshake .4s ease}
+@keyframes ffshake{0%,100%{translate:0}25%{translate:-6px}50%{translate:5px}75%{translate:-3px}}
+.ff .fnote{font-family:"Gochi Hand",cursive;font-size:13.5px;color:var(--pink);min-height:0;max-height:0;overflow:hidden;transition:max-height .3s ease}
+.ff.bad .fnote{max-height:24px}
+.finbtn{display:block;width:100%;margin-top:36px;padding:15px 20px;border:0;border-radius:999px;cursor:pointer;
+  background:var(--pink-hot);color:#28121c;font-family:"Familjen Grotesk",sans-serif;font-weight:700;font-size:16px;letter-spacing:.01em;
+  box-shadow:0 16px 38px -16px rgba(255,143,194,.7);transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .25s}
+.finbtn:hover{transform:translateY(-2px) scale(1.012);box-shadow:0 20px 44px -14px rgba(255,143,194,.85)}
+.finbtn:active{transform:translateY(0) scale(.985)}
+.findone{display:none;padding:30px 0 6px}
+.findone .dh{font-family:"Familjen Grotesk",sans-serif;font-weight:700;font-size:clamp(22px,3vw,32px);letter-spacing:-.015em;margin:0 0 10px}
+.findone .dh .serif{color:var(--pink)}
+.findone .dp{font-family:"Gochi Hand",cursive;font-size:16px;color:var(--dim);margin:0}
+.fin.sent .finform{display:none}
+.fin.sent .findone{display:block;animation:donein .7s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes donein{from{opacity:0;translate:0 18px;scale:.96}to{opacity:1;translate:0 0;scale:1}}
+@media (prefers-reduced-motion:reduce){.ff.bad input,.fin.sent .findone{animation:none!important}}
+
+/* ---- v25: uniform case-card frames ---- */
+.pcard{width:236px}
+.pcard img{width:100%;height:268px;object-fit:cover;object-position:center top}
+.pcard figcaption{flex-wrap:wrap}
+@media (max-width:1000px){.pcard{width:172px}.pcard img{height:196px}}
+
+/* ---- v25: feedback swing-tag ---- */
+.fintag{position:relative;margin:26px auto 0;background:linear-gradient(158deg,#1a1810 0%,#131109 60%,#0e0d0b 100%);text-align:left;rotate:-1.1deg;
+  border:1.5px solid rgba(241,237,225,.34);
+  clip-path:polygon(36px 0,100% 0,100% 100%,0 100%,0 36px);
+  box-shadow:0 44px 100px -54px rgba(0,0,0,.95),0 0 70px -34px rgba(255,143,194,.26);
+  padding:66px 40px 36px;transition:rotate .45s cubic-bezier(.34,1.56,.64,1),box-shadow .4s}
+.fintag:hover{rotate:.3deg;box-shadow:0 50px 112px -50px rgba(0,0,0,.95),0 0 92px -30px rgba(255,143,194,.4)}
+.fintag::before{content:"";position:absolute;inset:9px;pointer-events:none;
+  border:1.5px dashed rgba(241,237,225,.22);
+  clip-path:polygon(31px 0,100% 0,100% 100%,0 100%,0 31px)}
+.eyelet{position:absolute;left:31px;top:27px;width:14px;height:14px;border-radius:50%;
+  background:var(--bg);box-shadow:0 0 0 3.5px rgba(241,237,225,.42),0 0 0 5.5px #131210}
+.eyelet::before{content:"";position:absolute;left:5px;bottom:11px;width:2px;height:26px;
+  background:var(--pink);border-radius:2px;transform:rotate(16deg);transform-origin:bottom;opacity:.85}
+.fintag .ff{margin-bottom:22px}
+.ff textarea{appearance:none;background:transparent;border:0;border-bottom:1.5px solid #ffffff26;border-radius:0;resize:none;
+  font-family:"Familjen Grotesk",sans-serif;font-size:16px;line-height:1.5;color:var(--fg);padding:8px 2px 10px;min-height:62px;transition:border-color .25s}
+.ff textarea::placeholder{color:#565349}
+.ff textarea:focus{outline:none;border-bottom-color:var(--pink);box-shadow:0 3px 14px -7px rgba(255,143,194,.75)}
+.ff.bad textarea{border-bottom-color:var(--pink);animation:ffshake .4s ease}
+.fintag .finbtn{margin-top:26px}
+.fintag .findone{padding:16px 0 8px}
+@media (max-width:600px){.fintag{padding:60px 24px 28px}}
+
+/* giant sign-off wordmark */
+.giant{position:relative;overflow:hidden;margin-top:60px;padding:90px 0 0;text-align:center}
+.giant .gsm{display:block;font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.24em;color:var(--dim);margin-bottom:24px}
+.sewwrap{position:relative;margin:44px 0 -4.4vw}
+.thread{position:absolute;left:0;top:50%;width:100%;height:64%;transform:translateY(-50%);overflow:visible;pointer-events:none;z-index:2}
+.tpath{fill:none;stroke:var(--pink);stroke-width:2.4;stroke-linecap:round;stroke-dasharray:100;stroke-dashoffset:calc((1 - var(--gp,0)) * 100);filter:drop-shadow(0 0 6px rgba(255,143,194,.5))}
+.needle{transform:translateX(calc(var(--gp,0) * 988px));opacity:calc(var(--gp,0)*3 - .1)}
+.needle line{stroke:var(--butter);stroke-width:3;stroke-linecap:round}
+.needle path{fill:var(--butter)}
+.gword{position:relative;z-index:1;font-family:"Familjen Grotesk",sans-serif;font-weight:700;font-size:23vw;line-height:.76;letter-spacing:-.055em;color:var(--butter);white-space:nowrap;user-select:none;
+  transform:scale(var(--gscale,1));transform-origin:50% 100%;will-change:transform}
+.gword span{display:inline-block;transform-origin:50% 100%;
+  --s:clamp(0,calc((var(--gp,0) - var(--t,0)) * 4.2),1);
+  --bump:sin(calc(var(--s) * 180deg));
+  transform:translateX(calc(var(--bump) * var(--col,0px))) translateY(calc((1 - var(--s)) * var(--dy,80px))) rotate(calc((1 - var(--s)) * var(--rot,12deg) + var(--bump) * var(--wob,0deg) + var(--rest,0deg))) scaleY(calc(1 + var(--bump) * .12)) scaleX(calc(1 - var(--bump) * .05));
+  opacity:clamp(.05,calc(var(--s) * 1.6),1);transition:filter .3s}
+.gword span:hover{filter:drop-shadow(0 5px 0 rgba(255,143,194,.55))}
+@media (max-width:1000px){.giant{margin-top:20px;padding-top:60px}}
+@media (prefers-reduced-motion:reduce){
+  .scene.touch .tring,.scene.touch .dood,.scene.touch .gA,.joy path,.cin.pin.lifted .drop,.gword span{animation:none!important;transition:none}
+  .scene.touch .tring,.scene.touch .dood{opacity:0}
+  .joy path{opacity:1}
+  .gword{transform:none!important}
+  .gword span{transform:none!important;opacity:1!important}
+  .mq{transform:none!important}
+}
+
+/* ---- v23: interactive recombine machine ---- */
+.pxwin{cursor:pointer}
+#pxResew{cursor:pointer;color:var(--butter);transition:transform .15s ease,color .2s}
+#pxResew:hover{transform:translateX(3px);color:#fff}
+.pxwin.sewing{animation:sewflash .45s ease}
+@keyframes sewflash{0%,100%{filter:none}40%{filter:brightness(1.32) drop-shadow(0 0 10px rgba(255,143,194,.55))}}
+.pxchip.pop{animation:chippop .45s ease}
+@keyframes chippop{0%{background:#3a1f2b}100%{background:#161411}}
+@media (prefers-reduced-motion:reduce){.pxwin.sewing,.pxchip.pop{animation:none!important}}
+
+/* ---- v26: coherent hand-drawn flow illustrations ---- */
+.note .fd{width:78%;max-width:156px;height:auto;display:block;margin:0 0 10px}
+.fd .fk1{fill:none;stroke:var(--fg);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.fd .fk2{fill:none;stroke:var(--fg);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.fd .fpk{stroke:var(--pink)}
+.fd .fbt{fill:var(--butter)}
+.fd .fpf{fill:var(--pink)}
+.fd .dr{stroke-dasharray:1;stroke-dashoffset:1}
+.flow.seen .fd .dr{animation:fdraw 1s cubic-bezier(.4,0,.3,1) forwards;animation-delay:calc(var(--fo,0)*1s)}
+@keyframes fdraw{to{stroke-dashoffset:0}}
+.fd.fdpx{width:62%;max-width:128px}
+.fd .pxr{opacity:0}
+.flow.seen .fd .pxr{animation:pxin .06s steps(1) forwards;animation-delay:calc(var(--fo,0)*1s + var(--k)*.016s)}
+@keyframes pxin{to{opacity:1}}
+.fd .fpl{opacity:0}
+.flow.seen .fd .fpl{animation:ffl .8s ease forwards;animation-delay:calc(var(--fo,0)*1s + .5s)}
+@keyframes ffl{to{opacity:1}}
+.fd .fl{opacity:0;transform-box:fill-box;transform-origin:center;scale:.4}
+.flow.seen .fd .fl{animation:fpop .5s cubic-bezier(.34,1.7,.6,1) forwards;animation-delay:calc(var(--fo,0)*1s + .85s)}
+@keyframes fpop{to{opacity:1;scale:1}}
+@media (prefers-reduced-motion:reduce){
+  .fd .pxr{animation:none!important;opacity:1}
+  .fd .dr,.fd .fl,.fd .fpl{animation:none!important}
+  .fd .dr{stroke-dashoffset:0}
+  .fd .fl,.fd .fpl{opacity:1;scale:1}
+}
+</style></head>
+<body>
+<div class="vignette"></div><div class="grain"></div>
+
+<div class="top">
+  <div class="brand"><span class="mk"></span>Innovogue</div>
+  <div class="rt">a co-creation studio<br>for fashion designers</div>
+</div>
+
+<!-- HERO -->
+<section class="hero2" id="hero">
+  <div class="eyeb">THE CO-CREATION TABLE</div>
+  <h1 class="t2">
+    <span class="g1">Take it apart (<svg class="doo" viewBox="0 0 90 54" aria-hidden="true"><path d="M7 18 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0 M7 38 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0 M23 23 C42 26 62 34 84 42 M23 33 C42 30 62 22 84 13 M39 28 a2 2 0 1 0 4 0 a2 2 0 1 0 -4 0"/></svg>),</span>
+    <span class="g2">sew it back <em class="pk">a little wrong.</em></span>
+  </h1>
+
+  <div class="heroCta"><a class="hlt hlts" href="home.html">open the studio <span class="hltarr">↗</span></a></div>
+</section>
+
+
+<!-- CASE SHOW -->
+<div class="slab hand">CASE SHOW</div>
+<section class="cases" id="cases">
+  <div class="chead">
+    <div class="cl">
+      <div class="tags"><span class="tag">Reference</span><span class="tag">Deconstruct</span><span class="tag">Runway</span></div>
+      <h2>Case no.01 · <span class="serif">greenhouse couture:</span> nine looks grown from one botanical moodboard</h2>
+    </div>
+    <div class="cr">
+      <p>Every designer here keeps a library. Each look is tagged the way it lands in one. The theme you named for it, plus the element you pulled: pattern, palette, silhouette, symbol. One moodboard in, nine directions out.</p>
+      <a class="see" href="library.html">SEE FULL CASE ↗</a>
+    </div>
+  </div>
+  <div class="mq"><div class="track track2"><figure class="pcard"><div class="pbar2"><span class="pttl">LOOK_01.PNG</span><span class="pdots"><i></i><i></i><i class="x"></i></span></div><img src="images/case01.png" alt="" loading="lazy"><figcaption><span class="pchipx th">Wing</span><span class="pchipx el">Silhouette</span></figcaption></figure><figure class="pcard"><div class="pbar2"><span class="pttl">LOOK_02.PNG</span><span class="pdots"><i></i><i></i><i class="x"></i></span></div><img src="images/case02.png" alt="" loading="lazy"><figcaption><span class="pchipx th">Bloom</span><span class="pchipx el">Silhouette</span></figcaption></figure><figure class="pcard"><div class="pbar2"><span class="pttl">LOOK_03.PNG</span><span class="pdots"><i></i><i></i><i class="x"></i></span></div><img src="images/case03.png" alt="" loading="lazy"><figcaption><span class="pchipx th">Leaf</span><span class="pchipx el">Botanical</span></figcaption></figure><figure class="pcard"><div class="pbar2"><span class="pttl">LOOK_04.PNG</span><span class="pdots"><i></i><i></i><i class="x"></i></span></div><img src="images/case04.png" alt="" loading="lazy"><figcaption><span class="pchipx th">Spectrum</span><span class="pchipx el">Layered</span></figcaption></figure><figure class="pcard"><div class="pbar2"><span class="pttl">LOOK_05.PNG</span><span class="pdots"><i></i><i></i><i class="x"></i></span></div><img src="images/case05.png" alt="" loading="lazy"><figcaption><span class="pchipx th">Chrysalis</span><span class="pchipx el">Drape</span></figcaption></figure><figure class="pcard"><div class="pbar2"><span class="pttl">LOOK_06.PNG</span><span class="pdots"><i></i><i></i><i class="x"></i></span></div><img src="images/case06.png" alt="" loading="lazy"><figcaption><span class="pchipx th">Ember</span><span class="pchipx el">Palette</span></figcaption></figure><figure class="pcard"><div class="pbar2"><span class="pttl">LOOK_07.PNG</span><span class="pdots"><i></i><i></i><i class="x"></i></span></div><img src="images/case07.png" alt="" loading="lazy"><figcaption><span class="pchipx th">Ginkgo</span><span class="pchipx el">Silhouette</span></figcaption></figure><figure class="pcard"><div class="pbar2"><span class="pttl">LOOK_08.PNG</span><span class="pdots"><i></i><i></i><i class="x"></i></span></div><img src="images/case08.png" alt="" loading="lazy"><figcaption><span class="pchipx th">Orchid</span><span class="pchipx el">Symbolic</span></figcaption></figure><figure class="pcard"><div class="pbar2"><span class="pttl">LOOK_09.PNG</span><span class="pdots"><i></i><i></i><i class="x"></i></span></div><img src="images/case09.png" alt="" loading="lazy"><figcaption><span class="pchipx th">Radiate</span><span class="pchipx el">Silhouette</span></figcaption></figure><figure class="pcard"><div class="pbar2"><span class="pttl">LOOK_10.PNG</span><span class="pdots"><i></i><i></i><i class="x"></i></span></div><img src="images/case10.png" alt="" loading="lazy"><figcaption><span class="pchipx th">Constellation</span><span class="pchipx el">Filament</span></figcaption></figure><figure class="pcard"><div class="pbar2"><span class="pttl">LOOK_11.PNG</span><span class="pdots"><i></i><i></i><i class="x"></i></span></div><img src="images/case11.png" alt="" loading="lazy"><figcaption><span class="pchipx th">Blossom</span><span class="pchipx el">Pleat</span></figcaption></figure><figure class="pcard"><div class="pbar2"><span class="pttl">LOOK_01.PNG</span><span class="pdots"><i></i><i></i><i class="x"></i></span></div><img src="images/case01.png" alt="" loading="lazy"><figcaption><span class="pchipx th">Wing</span><span class="pchipx el">Silhouette</span></figcaption></figure><figure class="pcard"><div class="pbar2"><span class="pttl">LOOK_02.PNG</span><span class="pdots"><i></i><i></i><i class="x"></i></span></div><img src="images/case02.png" alt="" loading="lazy"><figcaption><span class="pchipx th">Bloom</span><span class="pchipx el">Silhouette</span></figcaption></figure><figure class="pcard"><div class="pbar2"><span class="pttl">LOOK_03.PNG</span><span class="pdots"><i></i><i></i><i class="x"></i></span></div><img src="images/case03.png" alt="" loading="lazy"><figcaption><span class="pchipx th">Leaf</span><span class="pchipx el">Botanical</span></figcaption></figure><figure class="pcard"><div class="pbar2"><span class="pttl">LOOK_04.PNG</span><span class="pdots"><i></i><i></i><i class="x"></i></span></div><img src="images/case04.png" alt="" loading="lazy"><figcaption><span class="pchipx th">Spectrum</span><span class="pchipx el">Layered</span></figcaption></figure><figure class="pcard"><div class="pbar2"><span class="pttl">LOOK_05.PNG</span><span class="pdots"><i></i><i></i><i class="x"></i></span></div><img src="images/case05.png" alt="" loading="lazy"><figcaption><span class="pchipx th">Chrysalis</span><span class="pchipx el">Drape</span></figcaption></figure><figure class="pcard"><div class="pbar2"><span class="pttl">LOOK_06.PNG</span><span class="pdots"><i></i><i></i><i class="x"></i></span></div><img src="images/case06.png" alt="" loading="lazy"><figcaption><span class="pchipx th">Ember</span><span class="pchipx el">Palette</span></figcaption></figure><figure class="pcard"><div class="pbar2"><span class="pttl">LOOK_07.PNG</span><span class="pdots"><i></i><i></i><i class="x"></i></span></div><img src="images/case07.png" alt="" loading="lazy"><figcaption><span class="pchipx th">Ginkgo</span><span class="pchipx el">Silhouette</span></figcaption></figure><figure class="pcard"><div class="pbar2"><span class="pttl">LOOK_08.PNG</span><span class="pdots"><i></i><i></i><i class="x"></i></span></div><img src="images/case08.png" alt="" loading="lazy"><figcaption><span class="pchipx th">Orchid</span><span class="pchipx el">Symbolic</span></figcaption></figure><figure class="pcard"><div class="pbar2"><span class="pttl">LOOK_09.PNG</span><span class="pdots"><i></i><i></i><i class="x"></i></span></div><img src="images/case09.png" alt="" loading="lazy"><figcaption><span class="pchipx th">Radiate</span><span class="pchipx el">Silhouette</span></figcaption></figure><figure class="pcard"><div class="pbar2"><span class="pttl">LOOK_10.PNG</span><span class="pdots"><i></i><i></i><i class="x"></i></span></div><img src="images/case10.png" alt="" loading="lazy"><figcaption><span class="pchipx th">Constellation</span><span class="pchipx el">Filament</span></figcaption></figure><figure class="pcard"><div class="pbar2"><span class="pttl">LOOK_11.PNG</span><span class="pdots"><i></i><i></i><i class="x"></i></span></div><img src="images/case11.png" alt="" loading="lazy"><figcaption><span class="pchipx th">Blossom</span><span class="pchipx el">Pleat</span></figcaption></figure></div></div></section>
+
+<!-- WORKFLOW -->
+<section class="flow" id="flow">
+  <div class="hd"><h2>Four moves, then a <span class="serif">mess.</span></h2></div>
+  <svg id="lines" viewBox="0 0 1300 560" preserveAspectRatio="none"><g fill="none" stroke="#ffffff20" stroke-width="1.4" stroke-linecap="round">
+    <path d="M330 250 C430 300 470 300 540 250"/>
+    <path d="M720 260 C800 300 820 350 770 400"/>
+    <path d="M960 260 C1020 300 1060 300 1090 255"/>
+  </g></svg>
+  
+  <div class="pxcur" id="pxcur" aria-hidden="true"><svg viewBox="0 0 22 24"><path d="M2 1 L2 19 L7 15 L10 22 L13.4 20.6 L10.4 13.6 L17 13 Z" fill="#F1EDE1" stroke="#000" stroke-width="1.4"/></svg></div>
+  <div class="pxwin" id="pxwin" role="img" aria-label="Recombine demo window">
+    <div class="pxbar"><span class="pxt">RECOMBINE.EXE</span><span class="pxbtns"><i></i><i></i><i class="x"></i></span></div>
+    <div class="pxbody">
+      <div class="pxcol"><div class="pxh">REFS_IN</div><div class="pxreel"><div class="reel up"><img src="images/ref01.png" alt="" loading="lazy"><img src="images/ref02.png" alt="" loading="lazy"><img src="images/ref03.png" alt="" loading="lazy"><img src="images/ref04.png" alt="" loading="lazy"><img src="images/ref05.png" alt="" loading="lazy"><img src="images/ref01.png" alt="" loading="lazy"><img src="images/ref02.png" alt="" loading="lazy"><img src="images/ref03.png" alt="" loading="lazy"><img src="images/ref04.png" alt="" loading="lazy"><img src="images/ref05.png" alt="" loading="lazy"></div></div></div>
+      <div class="pxcol mid"><div class="pxh">ELEMENTS</div>
+        <div class="pxchip">PALETTE ▸ <b id="pxPal">red / blue</b></div>
+        <div class="pxchip">PATTERN ▸ <b id="pxPat">spots</b></div>
+        <div class="pxchip">SILHOUETTE ▸ <b id="pxSil">full skirt</b></div>
+        <div class="pxarr" id="pxResew">▶ RE-SEW</div>
+      </div>
+      <div class="pxcol"><div class="pxh">OUT</div><div class="pxreel"><div class="reel down"><img src="images/out01.png" alt="" loading="lazy"><img src="images/out02.png" alt="" loading="lazy"><img src="images/out03.png" alt="" loading="lazy"><img src="images/out04.png" alt="" loading="lazy"><img src="images/out05.png" alt="" loading="lazy"><img src="images/out01.png" alt="" loading="lazy"><img src="images/out02.png" alt="" loading="lazy"><img src="images/out03.png" alt="" loading="lazy"><img src="images/out04.png" alt="" loading="lazy"><img src="images/out05.png" alt="" loading="lazy"></div></div><div class="pxgen">GENERATE ↻</div></div>
+    </div>
+    <div class="pxfoot"><span class="pxblocks"><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b></span><span class="pxst" id="pxSt">sewing… 87% </span></div>
+  </div>
+
+  <div class="note" style="left:120px;top:180px;--fo:0"><svg class="fd fdpx" viewBox="0 0 24 18" aria-hidden="true"><rect class="pxr" style="--k:0" x="4" y="1" width="2" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:1" x="15" y="1" width="2" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:2" x="4" y="2" width="2" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:3" x="10" y="2" width="1" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:4" x="15" y="2" width="2" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:5" x="9" y="3" width="3" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:6" x="10" y="4" width="1" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:7" x="7" y="5" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:8" x="12" y="5" width="1" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:9" x="8" y="6" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:10" x="11" y="6" width="1" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:11" x="2" y="8" width="2" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:12" x="18" y="8" width="2" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:13" x="2" y="9" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:14" x="19" y="9" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:15" x="2" y="10" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:16" x="5" y="10" width="4" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:17" x="13" y="10" width="3" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:18" x="19" y="10" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:19" x="2" y="11" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:20" x="5" y="11" width="4" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:21" x="13" y="11" width="3" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:22" x="19" y="11" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:23" x="2" y="12" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:24" x="7" y="12" width="4" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:25" x="19" y="12" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:26" x="2" y="13" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:27" x="7" y="13" width="4" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:28" x="19" y="13" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:29" x="2" y="14" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:30" x="19" y="14" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:31" x="2" y="15" width="18" height="1" fill="#F1EDE1"/></svg><div class="n">01</div><h4>collect</h4><p>Toss in whatever caught your eye.</p></div>
+  <div class="note" style="left:540px;top:130px;--fo:.35"><svg class="fd fdpx" viewBox="0 0 24 18" aria-hidden="true"><rect class="pxr" style="--k:0" x="5" y="1" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:1" x="11" y="1" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:2" x="17" y="1" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:3" x="6" y="2" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:4" x="11" y="2" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:5" x="16" y="2" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:6" x="8" y="4" width="6" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:7" x="6" y="5" width="2" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:8" x="14" y="5" width="2" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:9" x="4" y="6" width="2" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:10" x="9" y="6" width="2" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:11" x="15" y="6" width="2" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:12" x="3" y="7" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:13" x="8" y="7" width="4" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:14" x="17" y="7" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:15" x="3" y="8" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:16" x="8" y="8" width="4" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:17" x="17" y="8" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:18" x="4" y="9" width="2" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:19" x="9" y="9" width="2" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:20" x="15" y="9" width="2" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:21" x="6" y="10" width="2" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:22" x="14" y="10" width="2" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:23" x="8" y="11" width="6" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:24" x="6" y="13" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:25" x="11" y="13" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:26" x="16" y="13" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:27" x="5" y="14" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:28" x="11" y="14" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:29" x="17" y="14" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:30" x="3" y="16" width="1" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:31" x="20" y="16" width="1" height="1" fill="#EDE4A2"/></svg><div class="n">02</div><h4>diverge</h4><p>Read each image past the obvious.</p></div>
+  <div class="note" style="left:720px;top:360px;--fo:.7"><svg class="fd fdpx" viewBox="0 0 24 18" aria-hidden="true"><rect class="pxr" style="--k:0" x="11" y="1" width="1" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:1" x="10" y="2" width="2" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:2" x="3" y="4" width="8" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:3" x="12" y="4" width="1" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:4" x="14" y="4" width="7" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:5" x="3" y="5" width="8" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:6" x="11" y="5" width="1" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:7" x="13" y="5" width="1" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:8" x="14" y="5" width="7" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:9" x="3" y="6" width="8" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:10" x="12" y="6" width="1" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:11" x="14" y="6" width="2" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:12" x="16" y="6" width="1" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:13" x="17" y="6" width="4" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:14" x="3" y="7" width="8" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:15" x="11" y="7" width="1" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:16" x="13" y="7" width="1" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:17" x="14" y="7" width="7" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:18" x="3" y="8" width="1" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:19" x="4" y="8" width="1" height="1" fill="#28121c"/><rect class="pxr" style="--k:20" x="5" y="8" width="6" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:21" x="12" y="8" width="1" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:22" x="14" y="8" width="7" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:23" x="3" y="9" width="8" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:24" x="11" y="9" width="1" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:25" x="13" y="9" width="1" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:26" x="14" y="9" width="4" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:27" x="18" y="9" width="1" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:28" x="19" y="9" width="2" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:29" x="3" y="10" width="5" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:30" x="8" y="10" width="1" height="1" fill="#28121c"/><rect class="pxr" style="--k:31" x="9" y="10" width="2" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:32" x="12" y="10" width="1" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:33" x="14" y="10" width="7" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:34" x="3" y="11" width="8" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:35" x="11" y="11" width="1" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:36" x="13" y="11" width="1" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:37" x="14" y="11" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:38" x="15" y="11" width="1" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:39" x="16" y="11" width="5" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:40" x="3" y="12" width="8" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:41" x="12" y="12" width="1" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:42" x="14" y="12" width="7" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:43" x="3" y="13" width="8" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:44" x="11" y="13" width="1" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:45" x="13" y="13" width="1" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:46" x="14" y="13" width="7" height="1" fill="#F1EDE1"/></svg><div class="n">03</div><h4>recombine</h4><p>Parts from three images, one idea.</p></div>
+  <div class="note" style="left:1060px;top:170px;--fo:1.05"><svg class="fd fdpx" viewBox="0 0 24 18" aria-hidden="true"><rect class="pxr" style="--k:0" x="11" y="0" width="1" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:1" x="6" y="1" width="1" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:2" x="8" y="2" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:3" x="13" y="2" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:4" x="8" y="3" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:5" x="13" y="3" width="1" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:6" x="8" y="4" width="6" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:7" x="8" y="5" width="6" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:8" x="8" y="6" width="6" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:9" x="9" y="7" width="4" height="1" fill="#F1EDE1"/><rect class="pxr" style="--k:10" x="9" y="8" width="4" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:11" x="8" y="9" width="6" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:12" x="7" y="10" width="8" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:13" x="20" y="10" width="1" height="1" fill="#EDE4A2"/><rect class="pxr" style="--k:14" x="6" y="11" width="10" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:15" x="5" y="12" width="12" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:16" x="5" y="13" width="12" height="1" fill="#FF8FC2"/><rect class="pxr" style="--k:17" x="3" y="15" width="1" height="1" fill="#EDE4A2"/></svg><div class="n">04</div><h4>make it</h4><p>A prompt writes itself. Reroll.</p></div>
+</section>
+
+<!-- CLOSE -->
+<section class="close" id="about"><div class="stickzone" id="stick"><div class="cin pin">
+  <div class="ctext">
+  <h3>So, let's untangle that <span class="serif">mess.</span></h3>
+  <p class="hand csub">START WITH ONE REFERENCE, THE TABLE DOES THE REST</p>
+  <a class="drop" id="start" href="start.html">
+    <svg class="ants" aria-hidden="true"><rect/></svg>
+    <svg class="updoodle" viewBox="0 0 80 66" aria-hidden="true">
+      <path d="M14 44 C 12 54, 16 58, 24 59 C 42 62, 58 60, 62 57 C 68 54, 68 47, 66 43"/>
+      <path d="M40 8 C 39 20, 40 30, 40 40 M28 26 C 32 31, 37 36, 40 40 C 44 35, 48 30, 52 25"/>
+    </svg>
+    <span class="dtx"><span class="dt">Drop a reference to start</span><br><span class="ds">JPG / PNG · or click to open the start page →</span></span>
+  </a>
+  </div>
+  <div class="scene" id="scene">
+    
+    <svg class="girl" viewBox="0 0 560 620" xmlns="http://www.w3.org/2000/svg">
+      <defs><path id="tr0" d="M234 452 a 46 13 0 1 1 92 0 a 46 13 0 1 1 -92 0"/><path id="tr1" d="M194 396 a 86 23 0 1 1 172 0 a 86 23 0 1 1 -172 0"/><path id="tr2" d="M158 334 a 122 32 0 1 1 244 0 a 122 32 0 1 1 -244 0"/><path id="tr3" d="M124 268 a 156 41 0 1 1 312 0 a 156 41 0 1 1 -312 0"/><path id="tr4" d="M94 198 a 186 49 0 1 1 372 0 a 186 49 0 1 1 -372 0"/><path id="tr5" d="M68 124 a 212 56 0 1 1 424 0 a 212 56 0 1 1 -424 0"/></defs>
+      <path class="ink tn spine" pathLength="1"
+        d="M280 468 C 190 452, 178 414, 298 408 C 412 402, 424 352, 268 344 C 138 337, 132 284, 298 276 C 452 268, 462 208, 272 202 C 106 196, 112 132, 298 126 C 470 121, 476 76, 300 72"/>
+      <g class="tring spin sp0" style="--rt:0.04;transform-origin:280px 452px"><text class="gtx" font-size="13" fill="#8b877c"><textPath href="#tr0">where to start?? · where to start?? · where to start?? ·</textPath></text></g><g class="tring spin sp1" style="--rt:0.15;transform-origin:280px 396px"><text class="gtx" font-size="14" fill="#8b877c"><textPath href="#tr1">too many refs… palette clash · deadline · too many refs… palette clash ·</textPath></text></g><g class="tring spin sp2" style="--rt:0.27;transform-origin:280px 334px"><text class="gtx" font-size="14" fill="#a49e8d"><textPath href="#tr2">redo the drape · toile no.4 · moodboard chaos · redo the drape · toile no.4 · moodboard chaos ·</textPath></text></g><g class="tring spin sp0" style="--rt:0.4;transform-origin:280px 268px"><text class="mtx" font-size="12" fill="#bdb69e"><textPath href="#tr3">silhouette · motif · grain · seam · bias · silhouette · motif · grain · seam · bias · silhouette ·</textPath></text></g><g class="tring spin sp1" style="--rt:0.52;transform-origin:280px 198px"><text class="mtx" font-size="12" fill="#d8cfa4"><textPath href="#tr4">balance · rhythm · contrast · harmony · proportion · balance · rhythm · contrast · harmony ·</textPath></text></g><g class="tring spin sp2" style="--rt:0.63;transform-origin:280px 124px"><text class="mtx" font-size="13" fill="#EDE4A2"><textPath href="#tr5">line · form · colour · texture · space · line · form · colour · texture · space · line · form ·</textPath></text></g>
+      <g class="dood" style="--dt:.2"><path class="ink tn" d="M150 322 C 140 310, 126 309, 125 318 C 124 326, 138 330, 150 326 M155 322 C 165 310, 179 309, 180 318 C 181 326, 167 330, 155 326 M152 319 C 152 326, 153 330, 153 334"/></g>
+      <g class="dood d2" style="--dt:.45"><path d="M425 212 L429 224 L441 228 L429 232 L425 244 L421 232 L409 228 L421 224 Z" fill="#EDE4A2"/></g>
+      <g class="dood" style="--dt:.33"><circle class="ink tn" cx="392" cy="352" r="7"/><circle class="ink tn" cx="406" cy="352" r="7"/><path class="ink tn" d="M396 358 L414 386 M402 358 L386 386"/></g>
+      <g class="dood d2" style="--dt:.5"><path d="M150 158 C 168 154, 188 156, 192 162 C 196 176, 194 192, 188 198 C 170 202, 154 200, 148 194 C 144 180, 146 166, 150 158 Z" fill="#FF8FC2" opacity=".8"/><path d="M156 166 C 168 163, 180 165, 183 169 C 186 178, 185 188, 181 191 C 169 194, 158 192, 155 188 C 152 179, 153 170, 156 166" fill="none" stroke="#28121c" stroke-width="1.3" stroke-dasharray="3 4"/></g>
+      <g class="dood" style="--dt:.6"><path class="ink tn" d="M430 96 C 428 90, 433 86, 438 89 C 441 91, 440 95, 436 96 M434 96 C 434 99, 433 101, 433 103 M433 103 C 415 118, 404 129, 406 133 C 408 137, 462 135, 463 131 C 464 127, 450 116, 433 103"/></g>
+      <g class="dood d2" style="--dt:.38"><path class="ink tn" d="M118 236 C 132 233, 148 234, 152 238 C 154 252, 154 268, 151 280 C 136 283, 122 282, 114 279 C 112 266, 113 248, 118 236"/><path class="ink tn" d="M121 268 C 132 270, 143 270, 149 268"/><path class="ink tn" d="M133 250 C 128 244, 121 243, 120 247 C 120 251, 127 253, 133 251 M135 250 C 140 244, 147 243, 148 247 C 148 251, 141 253, 135 251"/></g>
+
+      <g class="gA">
+        <path class="ink" d="M212 596 C 212 578, 226 570, 244 570 L 336 570 C 354 570, 366 579, 366 596"/>
+        <path class="ink tn" d="M316 570 C 322 580, 322 590, 314 596"/>
+        <path class="ink" d="M242 570 C 226 526, 248 484, 292 482 C 336 480, 364 514, 358 554 C 356 566, 350 574, 340 578"/>
+        <path class="ink tn" d="M256 504 C 272 496, 300 492, 324 498 C 340 502, 348 512, 350 524"/>
+        <path class="ink" d="M240 512 C 230 502, 236 488, 250 490 C 262 492, 264 506, 254 514 C 249 518, 243 517, 240 512"/>
+        <path class="ink" d="M346 504 C 340 492, 350 482, 363 486 C 373 489, 373 503, 363 509 C 357 512, 349 510, 346 504"/>
+        <path class="ink tn" d="M268 536 C 273 542, 281 542, 286 536"/>
+        <path class="ink tn" d="M306 534 C 311 540, 319 540, 324 534"/>
+        <path class="ink tn" d="M292 556 C 296 553, 300 557, 304 554"/>
+        <ellipse cx="278" cy="548" rx="8" ry="4.5" fill="#FF8FC2" opacity=".4"/>
+        <ellipse cx="332" cy="544" rx="8" ry="4.5" fill="#FF8FC2" opacity=".4"/>
+      </g>
+      <g class="joy" aria-hidden="true">
+        <path style="--jd:1.05s" d="M226 470 l6 14 14 6 -14 6 -6 14 -6 -14 -14 -6 14 -6 Z"/>
+        <path class="jp" style="--jd:1.25s" d="M368 452 l5 11 11 5 -11 5 -5 11 -5 -11 -11 -5 11 -5 Z"/>
+        <path style="--jd:1.45s" d="M300 440 l4 9 9 4 -9 4 -4 9 -4 -9 -9 -4 9 -4 Z"/>
+      </g>
+    </svg>
+  </div>
+  <div class="tlwrap" aria-hidden="true">
+    <svg class="tline" viewBox="0 0 1200 46" preserveAspectRatio="none"><path d="M 8 18 C 300 25, 900 25, 1192 15"/><path class="tg" d="M 30 26 C 320 32, 880 31, 1170 23"/></svg>
+    <svg class="cup" viewBox="0 0 64 64">
+      <path class="ck" d="M 16 30 C 15 42, 20 50, 30 50 C 40 50, 45 42, 44 30 C 35 27, 25 27, 16 30"/>
+      <path class="ck" d="M 44 33 C 52 32, 54 40, 46 44"/>
+      <path class="ck thin" d="M 12 55 C 24 58, 38 58, 50 55"/>
+      <g class="steam">
+        <path class="ck thin" d="M 24 22 C 22 17, 26 14, 24 9"/>
+        <path class="ck thin" d="M 34 22 C 36 16, 32 13, 34 7"/>
+      </g>
+    </svg>
+  </div>
+</div></div></section>
+
+<!-- GIANT SIGN-OFF -->
+<section class="giant" id="giant">
+  <div class="fin" id="fin">
+    <h3 class="finh">Made something on the table? <span class="serif">Tell us</span> how it felt. <span class="findim">Rough edges welcome.</span></h3>
+    <p class="hand finsub">Leave a note on the tag. We'll sew it into the next version.</p>
+    <div class="fintag">
+      <span class="eyelet" aria-hidden="true"></span>
+      <form class="finform" id="finForm" novalidate>
+        <label class="ff" id="ffEmail"><span class="fk">Email</span><input type="email" id="fEmail" placeholder="you@studio.com" autocomplete="email"><span class="fnote">hmm, that email doesn't look right…</span></label>
+        <label class="ff"><span class="fk">Which part is this about?</span><select id="fPkg" required><option value="" selected>Select…</option><option>Dropping a reference</option><option>The case cards</option><option>RECOMBINE.EXE</option><option>The whole table</option><option>Something else</option></select></label>
+        <label class="ff" id="ffNote"><span class="fk">Your note</span><textarea id="fNote" rows="3" placeholder="What felt great? What snagged?"></textarea><span class="fnote">an empty tag tells us nothing!</span></label>
+        <button class="finbtn" type="submit">Stitch it in ↗</button>
+      </form>
+      <div class="findone" role="status">
+        <p class="dh">Stitched in. <span class="serif">Thank you.</span></p>
+        <p class="dp">EVERY NOTE BECOMES A SEAM IN THE NEXT FITTING!</p>
+      </div>
+    </div>
+  </div>
+  <div class="sewwrap">
+    <svg class="thread" viewBox="0 0 1000 140" preserveAspectRatio="none" aria-hidden="true">
+      <path class="tpath" pathLength="100" d="M12 74 C 180 52, 300 92, 470 70 S 760 50, 988 74"/>
+      <g class="needle"><line x1="-32" y1="74" x2="0" y2="74"/><path d="M0 74 L-14 69 L-14 79 Z"/></g>
+    </svg>
+    <div class="gword" aria-hidden="true"><span style="--t:.02;--col:150px;--dy:90px;--rot:-20deg;--wob:-9deg;--rest:-2.5deg">i</span><span style="--t:.08;--col:108px;--dy:68px;--rot:16deg;--wob:8deg;--rest:1.6deg">n</span><span style="--t:.15;--col:70px;--dy:82px;--rot:-14deg;--wob:-7deg;--rest:2.2deg">n</span><span style="--t:.22;--col:32px;--dy:60px;--rot:20deg;--wob:9deg;--rest:-1.8deg">o</span><span style="--t:.3;--col:0px;--dy:92px;--rot:-16deg;--wob:-6deg;--rest:2.8deg">v</span><span style="--t:.38;--col:-32px;--dy:62px;--rot:16deg;--wob:8deg;--rest:-2.2deg">o</span><span style="--t:.46;--col:-70px;--dy:84px;--rot:-18deg;--wob:-9deg;--rest:1.9deg">g</span><span style="--t:.54;--col:-108px;--dy:66px;--rot:18deg;--wob:7deg;--rest:-2.6deg">u</span><span style="--t:.62;--col:-150px;--dy:78px;--rot:-16deg;--wob:-8deg;--rest:2.4deg">e</span></div>
+  </div>
+</section>
+
+<div class="nav"><span class="lg">Innovogue</span><a href="#cases">work</a><a href="#flow">how</a><a href="#about">about</a><a class="go" href="start.html">start</a></div>
+
+<script>
+const layers=[...document.querySelectorAll('.layer')];
+let tx=0,ty=0,cx=0,cy=0,sc=0;
+const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+addEventListener('pointermove',e=>{tx=(e.clientX/innerWidth-.5);ty=(e.clientY/innerHeight-.5);});
+function raf(){sc=window.scrollY;cx+=(tx-cx)*.045;cy+=(ty-cy)*.045;
+  layers.forEach(l=>{const d=+l.dataset.depth||6;const py=(sc*d*0.006);
+    l.style.transform=`translate(${(-cx*d).toFixed(2)}px,${(-cy*d - py).toFixed(2)}px)`;});
+  requestAnimationFrame(raf);}
+if(!reduce) raf();
+/* scroll-driven: pixel demo + poke scene */
+const flowS=document.querySelector('.flow'),pxc=document.getElementById('pxcur'),pxw=document.getElementById('pxwin');
+const closeS=document.querySelector('.close'),scene=document.getElementById('scene');
+const stick=document.getElementById('stick');let cp=0;
+const giant=document.getElementById('giant');let gcur=0,lastSc=0,skew=0;
+const mqs=[...document.querySelectorAll('.mq')];
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const easeOutBack=t=>{const c1=2.2,c3=c1+1;return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2);};
+const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+function drive(){
+  const vh=innerHeight;sc=window.scrollY;
+  if(flowS&&pxc&&pxw&&innerWidth>1000){
+    const r=flowS.getBoundingClientRect();
+    const p=clamp((vh-r.top)/(r.height+vh*0.15),0,1);
+    const t=ease(Math.min(1,p/0.75));
+    pxc.style.left=lerp(88,58.4,t)+'%';
+    pxc.style.top=lerp(10,70.2,t)+'%';
+    const hit=p>0.78;
+    pxc.classList.toggle('clicked',hit);
+    pxw.classList.toggle('show',p>0.86);
+  }
+  if(stick&&scene){
+    const r2=stick.getBoundingClientRect();
+    const total=Math.max(1, r2.height - vh);
+    const tp=clamp(-r2.top/total,0,1);
+    cp+=(tp-cp)*0.22;
+    const pinEl=scene.closest('.pin')||scene;pinEl.style.setProperty('--p',cp.toFixed(4));pinEl.classList.toggle('lifted',cp>0.82);
+    scene.classList.toggle('touch',cp>0.82);
+    if(window.__mflow)window.__mflow(cp);
+  }
+  if(giant){
+    const r3=giant.getBoundingClientRect();
+    const gp=clamp((vh-r3.top)/Math.max(1,r3.height*1.0),0,1);
+    gcur+=(gp-gcur)*0.18;
+    giant.style.setProperty('--gp',gcur.toFixed(4));
+    const t=clamp(gcur,0,1);
+    const bell=Math.sin(t*Math.PI);
+    giant.style.setProperty('--gscale',(1+bell*2).toFixed(4));
+  }
+  const vel=sc-lastSc;lastSc=sc;
+  skew+=(clamp(vel*-0.05,-3.5,3.5)-skew)*0.12;
+  mqs.forEach(m=>{m.style.transform='skewX('+skew.toFixed(3)+'deg)';});
+  requestAnimationFrame(drive);
+}
+if(!reduce){drive();}else{
+  if(scene){scene.style.setProperty('--p',1);scene.classList.add('touch','on');}
+  if(pxw)pxw.classList.add('show');
+  if(giant){giant.style.setProperty('--gp','1');giant.style.setProperty('--gscale','1');}
+}
+const boils=document.querySelectorAll('.boil');
+if(!reduce&&boils.length){let bs=3;setInterval(()=>{bs=bs%9+2;boils.forEach(t=>t.setAttribute('seed',bs));},170);}
+
+
+
+const mtp=[...document.querySelectorAll('.messy textPath')];let mtT=0;
+window.__mflow=function(p){mtT+=0.016;
+  mtp.forEach((t,i)=>{const drift=Math.sin(mtT*(0.5+i*0.13)+i*2.1)*3.2;t.setAttribute('startOffset',(drift-2)+'%');});
+};
+if(reduce&&scene){scene.style.setProperty('--p','1');}
+if(scene){new IntersectionObserver((es,o)=>{es.forEach(e=>{if(e.isIntersecting){scene.classList.add('on');o.disconnect();}})},{threshold:.3}).observe(scene);}
+const flowSec=document.getElementById('flow');
+if(flowSec){new IntersectionObserver((es,o)=>{es.forEach(en=>{if(en.isIntersecting){flowSec.classList.add('seen');o.disconnect();}})},{threshold:.25}).observe(flowSec);}
+
+/* v23: RECOMBINE is a real machine, click to re-sew */
+(function(){
+  const win=document.getElementById('pxwin');if(!win)return;
+  const st=document.getElementById('pxSt');
+  const pal=document.getElementById('pxPal'),pat=document.getElementById('pxPat'),sil=document.getElementById('pxSil');
+  const P={pal:['red / blue','ochre / ink','sage / cream','rust / bone','plum / gold'],
+           pat:['spots','stripes','check','floral','houndstooth'],
+           sil:['full skirt','column','A-line','bias cut','tulip']};
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  let busy=false;
+  function resew(ev){
+    if(ev)ev.preventDefault();
+    if(busy)return;busy=true;
+    [[pal,P.pal],[pat,P.pat],[sil,P.sil]].forEach(([el,pool])=>{
+      if(!el)return;el.textContent=pick(pool);
+      const chip=el.parentElement;chip.classList.remove('pop');void chip.offsetWidth;chip.classList.add('pop');
+    });
+    win.classList.remove('sewing');void win.offsetWidth;win.classList.add('sewing');
+    let pct=Math.floor(18+Math.random()*22);
+    if(st)st.textContent='sewing\u2026 '+pct+'% ';
+    const iv=setInterval(()=>{pct+=Math.floor(6+Math.random()*11);
+      if(pct>=100){clearInterval(iv);if(st)st.textContent='sewn \u2713 ';busy=false;}
+      else if(st)st.textContent='sewing\u2026 '+pct+'% ';
+    },90);
+  }
+  win.setAttribute('title','click to re-sew');
+  win.addEventListener('click',resew);
+})();
+
+/* v25: feedback tag — validate, then stitch in */
+(function(){
+  const form=document.getElementById('finForm'),fin=document.getElementById('fin');if(!form)return;
+  const email=document.getElementById('fEmail'),note=document.getElementById('fNote');
+  const fE=document.getElementById('ffEmail'),fT=document.getElementById('ffNote');
+  email.addEventListener('input',()=>fE.classList.remove('bad'));
+  note.addEventListener('input',()=>fT.classList.remove('bad'));
+  form.addEventListener('submit',e=>{
+    e.preventDefault();
+    let ok=true;
+    fE.classList.remove('bad');fT.classList.remove('bad');void fE.offsetWidth;
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())){fE.classList.add('bad');ok=false;}
+    if(!note.value.trim()){fT.classList.add('bad');ok=false;}
+    if(!ok){(fE.classList.contains('bad')?email:note).focus();return;}
+    fin.classList.add('sent');
+  });
+})();
+
+
+
+</script>
+</body></html>

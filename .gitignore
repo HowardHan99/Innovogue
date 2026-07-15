@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Environment secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Vercel local project link
+.vercel/
+
+# NOTE: dist/dd.js IS committed on purpose: the pages are plain HTML and have to
+# work when someone just opens them, with no build step and no npm install.
+
+# Logs
+*.log
+npm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# Claude Code local overrides (project settings stay committed)
+.claude/settings.local.json
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
