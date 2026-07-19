@@ -1,6 +1,6 @@
 /* =============== /api/image =============== */
 
-/* Two image jobs, one endpoint, both budget-gated:
+/* Three image jobs, one endpoint, all budget-gated:
 
    kind:"mood"    a small atmospheric textile study for the association
                   garden — the image sprouts that used to come from the
@@ -9,11 +9,19 @@
                   pose, adopted readings, their own controls) rendered as a
                   single garment. This is the "generate preview" leg of the
                   three-page loop.
+   kind:"sketch"  one variation tile: a /api/vary recipe drawn as a clean
+                  croquis illustration in the sketch grid's own visual
+                  language. Abstract but never scribbly, and physically a
+                  wearable garment. The local SVG stays underneath as the
+                  instant placeholder and the offline fallback.
 
    Same rule as /api/grow: the model proposes, the user curates. A render is
    one candidate the user can keep or re-roll, never "the answer". Prompts
    are built server-side from structured fields; free-text from the client is
    length-capped and never interpreted as instructions to this endpoint.
+   The render brief itself comes from src/weave.ts (via the generated
+   _weave.mjs), the same code that writes HOW IT READS in the drawer, so the
+   user has already read the exact sentences the model is about to get.
 
    Images return as data URLs. No storage, nothing retained server-side; if
    the user lights a mood image it travels in their pocket like any other
@@ -21,6 +29,8 @@
    to canned imagery, so the garden never goes blank. */
 
 import { guard, record, PRICE } from "./_budget.mjs";
+import { AXES } from "./vary.mjs";
+import { asFormula, weaveSentences } from "./_weave.mjs";
 
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 const DEFAULT_MODEL = "gemini-2.5-flash-image";
@@ -40,40 +50,66 @@ function moodPrompt(term, lineage) {
   ].join(" ");
 }
 
+/* the woven brief (the same sentences the drawer shows as HOW IT READS),
+   framed by the camera directions only the model needs */
 function renderPrompt(f) {
+  return [
+    "Fashion editorial photograph: exactly one long dress, full length in frame, presented on a simplified faceless figure in a quiet studio against a plain warm-grey backdrop.",
+    "The designer's brief follows. Every named ingredient in it must be visibly present and legible in the garment, translated into cut, drape, surface or color rather than implied:",
+    ...weaveSentences(f),
+    "Editorial lookbook lighting, softly graded. No human face, no text, no watermark, no brand marks.",
+  ].join(" ");
+}
+
+/* recipe -> a croquis sketch prompt. The words are locked to the same closed
+   vocabulary /api/vary emits, so the model draws the recipe the user picked,
+   not a free improvisation. Style is pinned to the sketch grid's existing
+   look: clean ivory line on near-black, one accent, abstract but composed. */
+const HEXRE = /^#[0-9a-fA-F]{6}$/;
+function sketchPrompt(f, r) {
+  const ax = (axis, fb) => (AXES[axis].includes(r?.[axis]) ? r[axis] : fb);
+  const neckline = ax("neckline", "scoop"), sleeve = ax("sleeve", "none");
+  const hem = ax("hem", "straight"), volume = ax("volume", "soft");
+  const motif = ax("motif", "none"), density = ax("density", "medium");
+  const accentOn = ax("accentOn", "waist");
+  const p = r?.palette ?? {};
+  const hex = (c, fb) => (typeof c === "string" && HEXRE.test(c.trim()) ? c.trim() : fb);
+  const base = hex(p.base, "#D5A9BC"), wash = hex(p.wash, "#EFE6CF"), accent = hex(p.accent, "#FF8FC2");
+
+  const NECK = { v: "a deep V neckline", scoop: "a soft rounded scoop neckline", square: "a clean square neckline", high: "a high close-to-the-neck neckline", strapless: "a strapless straight-across bodice" };
+  const SLEEVE = { none: "sleeveless", cap: "with small cap sleeves", puff: "with soft puff sleeves", long: "with slim full-length sleeves" };
+  const HEM = { straight: "a straight floor-length hem", asymmetric: "an asymmetric diagonal hem", scalloped: "a gently scalloped hem", highlow: "a high-low hem, shorter at the front" };
+  const VOL = { slim: "slim, close to the body", soft: "softly flared", full: "full and generous" };
+  const MOTIF = { none: "", rays: "faint lines radiating from the waist seam", cracks: "a fine crackle veining", drops: "scattered teardrop shapes", petals: "overlapping petal shapes near the hem", specks: "a fine scatter of tiny specks" };
+  const DENS = { sparse: "very sparse, barely there", medium: "quiet and even", dense: "dense but delicate" };
+
   const bits = [];
   bits.push(
-    `A single ${f.silhouette ? f.silhouette.toLowerCase() + "-silhouette " : ""}long dress on a dress form mannequin${f.pose ? `, presented in a ${f.pose.toLowerCase()} attitude` : ""}, photographed in a quiet studio against a plain warm-grey backdrop.`
+    `A refined fashion croquis illustration of ONE ${f.silhouette ? f.silhouette.toLowerCase() + "-silhouette " : ""}long dress on a simplified faceless figure${f.pose ? ` in a ${f.pose.toLowerCase()} attitude` : ""}, drawn in clean, confident ivory ink line on a very dark, near-black charcoal board.`
   );
-  if (f.colors.length) bits.push(`Palette: ${f.colors.join(", ")}.`);
-  if (f.form.length) bits.push(`The form follows ${f.form.join(", ")}.`);
-  if (f.surface.length) bits.push(`The surface carries ${f.surface.join(", ")}.`);
-  bits.push(`Fabric: soft silk or chiffon.`);
-  if (f.mood.length) bits.push(`It should feel ${f.mood.join(" and ")}.`);
-  if (f.notes.length) bits.push(`Designer's own notes: ${f.notes.join("; ")}.`);
+  bits.push(`The dress has ${NECK[neckline]}, ${SLEEVE[sleeve]}, ${HEM[hem]}; the skirt volume is ${VOL[volume]}.`);
+  if (MOTIF[motif]) bits.push(`Surface: ${MOTIF[motif]}, ${DENS[density]}.`);
+  bits.push(`The garment is filled with a muted flat wash from ${base} into ${wash}. Exactly one accent in ${accent}, placed at the ${accentOn === "neck" ? "neckline" : accentOn}; everything else stays quiet.`);
   if (f.controls.length) bits.push(`Hard constraints from the designer: ${f.controls.join(", ")}.`);
   bits.push(
-    "One garment only, full length in frame. Editorial lookbook lighting, softly graded. No human face, no text, no watermark, no brand marks."
+    "Abstract and minimal, but never scribbly: no rough hatching, no messy construction lines, no splatter. Elegant flat illustration with generous negative space, like a couture lookbook sketch."
   );
+  bits.push(
+    "The garment must be physically plausible: a wearable one-piece construction, fabric draping under gravity like soft silk or chiffon, neckline and seams structurally consistent, nothing floating or impossible."
+  );
+  bits.push(
+    "Background: one single uniform near-black charcoal tone (hex #14110F, almost black with the faintest warm undertone), identical from edge to edge. The image must read as light ivory drawing on a dark ground, NEVER dark lines on light or beige paper. No vignette, no spotlight, no lighting gradient, no paper texture, no border."
+  );
+  bits.push("Figure is a hint only: small head outline, no face, no hands detail. No text, no watermark, no logo, no photorealism.");
   return bits.join(" ");
 }
 
 function buildPrompt(body) {
+  if (body?.kind === "sketch") {
+    return { prompt: sketchPrompt(asFormula(body.formula), body.recipe ?? {}), aspect: "3:4" };
+  }
   if (body?.kind === "render") {
-    const f = body.formula ?? {};
-    return {
-      prompt: renderPrompt({
-        silhouette: cap(f.silhouette, 24),
-        pose: cap(f.pose, 24),
-        colors: capList(f.colors, 6, 60),
-        form: capList(f.form, 6, 60),
-        surface: capList(f.surface, 6, 60),
-        mood: capList(f.mood, 6, 60),
-        notes: capList(f.notes, 6, 60),
-        controls: capList(f.controls, 8, 40),
-      }),
-      aspect: "3:4",
-    };
+    return { prompt: renderPrompt(asFormula(body.formula)), aspect: "3:4" };
   }
   const term = cap(body?.term, 60);
   if (!term) {

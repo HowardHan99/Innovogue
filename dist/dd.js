@@ -26,31 +26,46 @@ var DD = (() => {
     MOODPIX: () => MOODPIX2,
     POCKET_KEY: () => POCKET_KEY,
     SCHEMA_VERSION: () => SCHEMA_VERSION,
+    asFormula: () => asFormula2,
+    autosaveCanvas: () => autosaveCanvas2,
     buildPocket: () => buildPocket2,
     cannedEngine: () => cannedEngine2,
     canvasHref: () => canvasHref2,
     classifyOwn: () => classifyOwn2,
     classifyWord: () => classifyWord,
+    clearCanvasAutosave: () => clearCanvasAutosave2,
     clearPocket: () => clearPocket,
     currentGrowEngine: () => currentGrowEngine,
+    describeImage: () => describeImage2,
+    describePrompt: () => describePrompt2,
     emptyPocket: () => emptyPocket,
     encodeSeed: () => encodeSeed,
+    getWorkflow: () => getWorkflow2,
     growFor: () => growFor,
     growImage: () => growImage2,
+    ingredientPhrase: () => ingredientPhrase2,
     isPersistent: () => isPersistent2,
+    listWorkflows: () => listWorkflows2,
     llmEngine: () => llmEngine2,
+    loadCanvasAutosave: () => loadCanvasAutosave2,
     loadPocket: () => loadPocket,
     migratePocket: () => migratePocket,
+    newWorkflowId: () => newWorkflowId2,
     overrideCategory: () => overrideCategory,
+    prepRefImage: () => prepRefImage2,
     proposePrompt: () => proposePrompt2,
     readIncoming: () => readIncoming2,
+    readingPhrase: () => readingPhrase2,
+    removeWorkflow: () => removeWorkflow2,
     savePocket: () => savePocket,
+    saveWorkflow: () => saveWorkflow2,
     scatter: () => scatter,
     setGrowEngine: () => setGrowEngine,
     storageBackend: () => storageBackend2,
     textWords: () => textWords2,
     toCardSeed: () => toCardSeed,
     toLitWord: () => toLitWord2,
+    weaveSentences: () => weaveSentences2,
     wordHref: () => wordHref2
   });
 
@@ -553,14 +568,24 @@ var DD = (() => {
     if (isImage && raw.img) w.img = raw.img;
     return w;
   }
-  function buildPocket(ref, refs, lit) {
-    return {
+  var MAX_REF_IMG = 3e5;
+  function cleanRefImgs(refImgs, n) {
+    if (!Array.isArray(refImgs)) return void 0;
+    const out = refImgs.slice(0, n).map((s) => typeof s === "string" && s.startsWith("data:image") && s.length <= MAX_REF_IMG ? s : null);
+    while (out.length < n) out.push(null);
+    return out.some(Boolean) ? out : void 0;
+  }
+  function buildPocket(ref, refs, lit, refImgs) {
+    const p = {
       v: SCHEMA_VERSION,
       ref: ref || refs.join(" + "),
       refs: refs.slice(),
       words: lit.map((raw, i) => toLitWord(raw, i)),
       savedAt: Date.now()
     };
+    const imgs = cleanRefImgs(refImgs, p.refs.length);
+    if (imgs) p.refImgs = imgs;
+    return p;
   }
   function isLegacy(v) {
     return !!v && typeof v === "object" && Array.isArray(v.items);
@@ -570,14 +595,18 @@ var DD = (() => {
     const p = v;
     if (Array.isArray(p.words)) {
       const words = p.words.filter((w) => !!w && typeof w === "object");
-      return {
+      const refs = Array.isArray(p.refs) ? p.refs.filter((r) => typeof r === "string") : [];
+      const out = {
         v: SCHEMA_VERSION,
         ref: typeof p.ref === "string" ? p.ref : "",
-        refs: Array.isArray(p.refs) ? p.refs.filter((r) => typeof r === "string") : [],
+        refs,
         /* a v1 pocket has words but no reading on them: read them now */
         words: words.map((w, i) => w.category ? w : toLitWord({ text: w.text, img: w.img, from: w.from, depth: w.depth }, i)),
         savedAt: typeof p.savedAt === "number" ? p.savedAt : Date.now()
       };
+      const imgs = cleanRefImgs(p.refImgs, refs.length);
+      if (imgs) out.refImgs = imgs;
+      return out;
     }
     if (isLegacy(v)) {
       const refs = (v.ref || "").split(" + ").map((s) => s.trim()).filter(Boolean);
@@ -824,6 +853,7 @@ var DD = (() => {
     const avoid = ((_b = ctx.avoid) != null ? _b : []).slice(0, 40).join(", ");
     return [
       `You are helping a fashion designer free-associate. They are pulling on the word "${term}".`,
+      ctx.image ? "Their own reference image is attached: ground every association in what is actually visible in it." : "",
       lineage ? `They reached it by: ${lineage}.` : "",
       `Offer ${n} associations that could each become a garment decision: a texture, a shape, a colour, a feeling, a construction detail.`,
       "Rules:",
@@ -834,6 +864,17 @@ var DD = (() => {
       avoid ? `- Already on their board, do not repeat: ${avoid}.` : "",
       `Return JSON only: {"words": ["...", "...", "..."]}`
     ].filter(Boolean).join("\n");
+  }
+  function describePrompt(n = 3) {
+    return [
+      "A fashion designer just uploaded this image as a reference. Look at it.",
+      `Return a label and ${n} associations, as JSON.`,
+      '- label: 2 to 4 lowercase words naming what the image actually shows ("rusted iron gate", "peony in rain"). No "photo of", no guessing beyond the frame.',
+      "- words: associations that could each become a garment decision: a texture, a shape, a colour, a feeling, a construction detail. Grounded in what is visible, two to four words each.",
+      "- Do not rank or explain. Vary the register: not three textures.",
+      "- No brand names, no season names, no trend language.",
+      `Return JSON only: {"label": "...", "words": ["...", "...", "..."]}`
+    ].join("\n");
   }
   function llmEngine(cfg, fallback = cannedEngine()) {
     return {
@@ -869,26 +910,69 @@ var DD = (() => {
       }
     };
   }
+  function decodeImg(dataUrl) {
+    const img = new Image();
+    return new Promise((res, rej) => {
+      img.onload = () => res(img);
+      img.onerror = () => rej(new Error("decode failed"));
+      img.src = dataUrl;
+    });
+  }
+  function scaleToJpeg(img, maxPx) {
+    const scale = Math.min(1, maxPx / Math.max(img.width, img.height, 1));
+    if (scale >= 1) return null;
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(img.width * scale));
+    c.height = Math.max(1, Math.round(img.height * scale));
+    const ctx = c.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(img, 0, 0, c.width, c.height);
+    return c.toDataURL("image/jpeg", 0.85);
+  }
   async function shrinkDataUrl(dataUrl, maxPx) {
+    var _a;
     try {
       if (typeof document === "undefined") return dataUrl;
-      const img = new Image();
-      await new Promise((res, rej) => {
-        img.onload = () => res();
-        img.onerror = () => rej(new Error("decode failed"));
-        img.src = dataUrl;
-      });
-      const scale = Math.min(1, maxPx / Math.max(img.width, img.height, 1));
-      if (scale >= 1) return dataUrl;
-      const c = document.createElement("canvas");
-      c.width = Math.max(1, Math.round(img.width * scale));
-      c.height = Math.max(1, Math.round(img.height * scale));
-      const ctx = c.getContext("2d");
-      if (!ctx) return dataUrl;
-      ctx.drawImage(img, 0, 0, c.width, c.height);
-      return c.toDataURL("image/jpeg", 0.85);
+      return (_a = scaleToJpeg(await decodeImg(dataUrl), maxPx)) != null ? _a : dataUrl;
     } catch {
       return dataUrl;
+    }
+  }
+  async function prepRefImage(dataUrl) {
+    var _a, _b;
+    try {
+      if (typeof document === "undefined") return null;
+      const img = await decodeImg(dataUrl);
+      if (!img.width || !img.height) return null;
+      return {
+        src: (_a = scaleToJpeg(img, 768)) != null ? _a : dataUrl,
+        thumb: (_b = scaleToJpeg(img, 280)) != null ? _b : dataUrl
+      };
+    } catch {
+      return null;
+    }
+  }
+  async function describeImage(image, cfg = {}) {
+    var _a, _b;
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), (_a = cfg.timeoutMs) != null ? _a : 15e3);
+    try {
+      const res = await fetch((_b = cfg.endpoint) != null ? _b : "/api/grow", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ image }),
+        signal: ctl.signal
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      const label = typeof data.label === "string" ? data.label.trim().slice(0, 40) : "";
+      const words = Array.isArray(data.words) ? data.words.filter((w) => typeof w === "string" && !!w.trim()).map((w) => w.trim()).slice(0, 4) : [];
+      if (!label || !words.length) return null;
+      return { label, words };
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timer);
     }
   }
   async function growImage(input, cfg = {}) {
@@ -923,6 +1007,183 @@ var DD = (() => {
     return engine.grow(term, ctx);
   }
 
+  // src/workflow.ts
+  var WORKFLOWS_KEY = "dd_workflows";
+  var CANVAS_KEY = "dd_canvas";
+  var MAX_WORKFLOWS = 20;
+  var seq2 = 0;
+  function newWorkflowId() {
+    return "wf" + Date.now().toString(36) + "-" + ++seq2 + Math.random().toString(36).slice(2, 6);
+  }
+  function asCard(v) {
+    if (!v || typeof v !== "object") return null;
+    const c = v;
+    if (typeof c.val !== "string" || !c.val) return null;
+    return {
+      val: c.val.slice(0, 80),
+      type: isCategory(c.type) ? c.type : "Custom",
+      source: typeof c.source === "string" ? c.source : "",
+      xp: typeof c.xp === "number" ? Math.max(0, Math.min(100, c.xp)) : 50,
+      yp: typeof c.yp === "number" ? Math.max(0, Math.min(100, c.yp)) : 50,
+      readings: Array.isArray(c.readings) ? c.readings.filter((r) => !!r && typeof r.label === "string").map((r) => ({ label: r.label.slice(0, 60), seed: typeof r.seed === "number" ? r.seed : 0 })) : [],
+      adopted: Array.isArray(c.adopted) ? c.adopted.filter((i) => typeof i === "number") : []
+    };
+  }
+  function asWorkflow(v) {
+    if (!v || typeof v !== "object") return null;
+    const w = v;
+    if (!Array.isArray(w.cards)) return null;
+    return {
+      v: 1,
+      id: typeof w.id === "string" && w.id ? w.id : newWorkflowId(),
+      title: typeof w.title === "string" ? w.title.slice(0, 80) : "",
+      ref: typeof w.ref === "string" ? w.ref : "",
+      savedAt: typeof w.savedAt === "number" ? w.savedAt : 0,
+      sil: typeof w.sil === "string" ? w.sil : null,
+      pose: typeof w.pose === "string" ? w.pose : null,
+      locked: !!w.locked,
+      controls: Array.isArray(w.controls) ? w.controls.filter((c) => typeof c === "string").slice(0, 12) : [],
+      fabric: typeof w.fabric === "string" ? w.fabric.slice(0, 40) : "",
+      sel: typeof w.sel === "number" ? w.sel : null,
+      origin: typeof w.origin === "string" ? w.origin : null,
+      render: typeof w.render === "string" && w.render.startsWith("data:image") ? w.render : null,
+      features: Array.isArray(w.features) ? w.features.filter((f) => !!f && typeof f.val === "string").map((f) => ({
+        val: f.val.slice(0, 80),
+        type: isCategory(f.type) ? f.type : "Custom",
+        source: typeof f.source === "string" ? f.source : ""
+      })) : [],
+      refs: Array.isArray(w.refs) ? w.refs.filter((r) => !!r && typeof r.name === "string" && !!r.name).slice(0, 8).map((r) => ({
+        name: r.name.slice(0, 40),
+        img: typeof r.img === "string" && r.img.startsWith("data:image") ? r.img : null
+      })) : [],
+      cards: w.cards.map(asCard).filter((c) => !!c)
+    };
+  }
+  function listWorkflows() {
+    const raw = readJSON(WORKFLOWS_KEY);
+    if (!Array.isArray(raw)) return [];
+    return raw.map(asWorkflow).filter((w) => !!w);
+  }
+  function getWorkflow(id) {
+    var _a;
+    return (_a = listWorkflows().find((w) => w.id === id)) != null ? _a : null;
+  }
+  function saveWorkflow(wf) {
+    const rest = listWorkflows().filter((w) => w.id !== wf.id);
+    writeJSON(WORKFLOWS_KEY, [wf, ...rest].slice(0, MAX_WORKFLOWS));
+    return wf;
+  }
+  function removeWorkflow(id) {
+    writeJSON(WORKFLOWS_KEY, listWorkflows().filter((w) => w.id !== id));
+  }
+  function autosaveCanvas(wf) {
+    writeJSON(CANVAS_KEY, wf);
+  }
+  function loadCanvasAutosave() {
+    return asWorkflow(readJSON(CANVAS_KEY));
+  }
+  function clearCanvasAutosave() {
+    remove(CANVAS_KEY);
+  }
+
+  // src/weave.ts
+  var READ_PHRASES = {
+    Pattern: {
+      "all-over, tiny": "as a tiny all-over motif",
+      "hem-heavy, large": "as large motifs massing toward the hem",
+      "one bold placement": "as one bold placement on a quiet ground",
+      "faded, ghosted": "faded to a ghost of itself",
+      "clustered at bodice": "clustered at the bodice and thinning below"
+    },
+    Silhouette: {
+      literal: "taken literally",
+      exaggerated: "exaggerated into drama",
+      whispered: "kept to a whisper",
+      "asymmetric take": "carried on one side only",
+      "structured, sharp": "hardened into sharp structure"
+    },
+    Color: {
+      dominant: "flooding the dress as its main field",
+      "as an accent": "held to a single accent",
+      "washed & faded": "washed and faded",
+      "in blocks": "set in clean blocks",
+      "only at the hem": "pooling only at the hem"
+    },
+    Symbolic: {
+      romantic: "read romantically",
+      stark: "read starkly",
+      playful: "read playfully",
+      solemn: "read solemnly",
+      "barely-there": "kept barely there"
+    },
+    Custom: {
+      "as written": "taken exactly as written",
+      amplified: "amplified",
+      quiet: "kept quiet"
+    }
+  };
+  function readingPhrase(cat, read) {
+    var _a, _b;
+    return (_b = (_a = READ_PHRASES[cat]) == null ? void 0 : _a[read]) != null ? _b : read;
+  }
+  var capStr = (s, n) => String(s != null ? s : "").trim().slice(0, n);
+  var capList = (a, n, len) => Array.isArray(a) ? a.filter((x) => typeof x === "string").map((x) => x.trim().slice(0, len)).filter(Boolean).slice(0, n) : [];
+  function asIngredient(x) {
+    if (typeof x === "string") {
+      const val2 = x.trim().slice(0, 80);
+      return val2 ? { val: val2, source: "", reads: [] } : null;
+    }
+    if (!x || typeof x !== "object") return null;
+    const o = x;
+    const val = capStr(o.val, 80);
+    if (!val) return null;
+    return { val, source: capStr(o.source, 40), reads: capList(o.reads, 4, 40) };
+  }
+  function asFormula(raw) {
+    const f = raw && typeof raw === "object" ? raw : {};
+    const ings = (a, n) => Array.isArray(a) ? a.map(asIngredient).filter((i) => !!i).slice(0, n) : [];
+    return {
+      silhouette: capStr(f.silhouette, 24),
+      pose: capStr(f.pose, 24),
+      colors: ings(f.colors, 6),
+      form: ings(f.form, 6),
+      surface: ings(f.surface, 6),
+      mood: ings(f.mood, 6),
+      notes: ings(f.notes, 6),
+      controls: capList(f.controls, 8, 40),
+      fabric: capStr(f.fabric, 40)
+    };
+  }
+  var listJoin = (xs) => {
+    var _a;
+    return xs.length <= 1 ? (_a = xs[0]) != null ? _a : "" : xs.slice(0, -1).join(", ") + " and " + xs[xs.length - 1];
+  };
+  function ingredientPhrase(cat, ing, valText) {
+    var _a;
+    const src = ing.source && ing.source.toLowerCase() !== "you" ? ` (from ${ing.source})` : "";
+    const reads = ((_a = ing.reads) != null ? _a : []).map((r) => readingPhrase(cat, r));
+    return (valText != null ? valText : ing.val) + src + (reads.length ? ", " + listJoin(reads) : "");
+  }
+  function weaveSentences(f, opts = {}) {
+    var _a, _b;
+    const strong = (_a = opts.strong) != null ? _a : ((t) => t);
+    const ph = (cat) => (ing) => ingredientPhrase(cat, ing, opts.chip ? opts.chip(ing, cat) : void 0);
+    const out = [];
+    const sil = ((_b = f.silhouette) != null ? _b : "").trim().toLowerCase();
+    const art = /^[aeioux]/.test(sil) ? "An" : "A";
+    let open = sil ? `${art} ${strong(sil)} long dress` : "A long dress";
+    if (f.pose) open += ` on a ${strong(f.pose.trim().toLowerCase())} figure`;
+    out.push(open + ".");
+    if (f.form.length) out.push(`Its shape takes after ${listJoin(f.form.map(ph("Silhouette")))}.`);
+    if (f.surface.length) out.push(`The surface carries ${listJoin(f.surface.map(ph("Pattern")))}.`);
+    if (f.colors.length) out.push(`Color comes in as ${listJoin(f.colors.map(ph("Color")))}.`);
+    out.push(`Cut in ${f.fabric && f.fabric.trim() ? f.fabric.trim() : "soft silk or chiffon"}.`);
+    if (f.mood.length) out.push(`It speaks of ${listJoin(f.mood.map(ph("Symbolic")))}.`);
+    if (f.notes.length) out.push(`In the designer's own words: ${f.notes.map(ph("Custom")).join("; ")}.`);
+    if (f.controls.length) out.push(`Non-negotiable: ${strong(f.controls.join(", "))}.`);
+    return out;
+  }
+
   // src/index.ts
   var buildPocket2 = buildPocket;
   var savePocket = save;
@@ -944,9 +1205,24 @@ var DD = (() => {
   var cannedEngine2 = cannedEngine;
   var llmEngine2 = llmEngine;
   var proposePrompt2 = proposePrompt;
+  var describePrompt2 = describePrompt;
   var growImage2 = growImage;
+  var describeImage2 = describeImage;
+  var prepRefImage2 = prepRefImage;
   var MOODPIX2 = MOODPIX;
+  var weaveSentences2 = weaveSentences;
+  var ingredientPhrase2 = ingredientPhrase;
+  var readingPhrase2 = readingPhrase;
+  var asFormula2 = asFormula;
   var storageBackend2 = storageBackend;
   var isPersistent2 = isPersistent;
+  var listWorkflows2 = listWorkflows;
+  var getWorkflow2 = getWorkflow;
+  var saveWorkflow2 = saveWorkflow;
+  var removeWorkflow2 = removeWorkflow;
+  var newWorkflowId2 = newWorkflowId;
+  var autosaveCanvas2 = autosaveCanvas;
+  var loadCanvasAutosave2 = loadCanvasAutosave;
+  var clearCanvasAutosave2 = clearCanvasAutosave;
   return __toCommonJS(index_exports);
 })();

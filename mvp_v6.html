@@ -37,8 +37,14 @@ a.brand:hover::before{box-shadow:0 0 22px rgba(255,143,194,.9)}
 .topbar nav a{font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.02em;color:var(--ink-soft);text-decoration:none}
 .topbar nav a.active{color:var(--ink);font-weight:700}
 .topbar nav a:hover{color:var(--pink)}
-.count-tag{margin-left:auto;font-family:'Space Mono',monospace;font-size:12px;color:var(--ink-soft);background:#ffffff08;border:1px solid var(--line);padding:5px 12px;border-radius:999px}
+.count-tag{font-family:'Space Mono',monospace;font-size:12px;color:var(--ink-soft);background:#ffffff08;border:1px solid var(--line);padding:5px 12px;border-radius:999px}
 .count-tag b{color:var(--pink)}
+.savebtn{margin-left:auto;font-family:'Space Mono',monospace;font-size:11.5px;letter-spacing:.04em;cursor:pointer;
+  color:var(--pink);background:transparent;border:1px solid var(--pink);padding:5px 13px;border-radius:999px;
+  transition:background .18s,color .18s,opacity .18s;margin-right:10px}
+.savebtn:hover:not(:disabled){background:var(--pink);color:var(--pink-ink)}
+.savebtn:disabled{opacity:.35;cursor:default}
+.savebtn.done{background:var(--green);border-color:var(--green);color:#15200f}
 
 /* ---------- layout: 2 columns + floating drawer ---------- */
 .app{display:grid;grid-template-columns:264px 1fr;gap:16px;padding:16px clamp(24px,3vw,56px) 40px;max-width:none;margin:0}
@@ -60,8 +66,12 @@ a.brand:hover::before{box-shadow:0 0 22px rgba(255,143,194,.9)}
   linear-gradient(105deg, transparent 48%, rgba(60,40,20,.5) 49%, transparent 51%),
   linear-gradient(20deg, transparent 58%, rgba(60,40,20,.45) 59%, transparent 61%)}
 .ref.r-tear{background:radial-gradient(ellipse at 50% 65%, #3FBF6B 0 30%, transparent 60%),linear-gradient(160deg,#134E48,#1E9E8F)}
-.ref.r-add{background:#17150f;border:1.5px dashed var(--ink-soft);display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:11px;font-weight:600;text-align:center}
-.ref.r-add:hover{border-color:var(--pink);color:var(--pink)}
+.ref.r-add{background:#17150f;border:1.5px dashed var(--ink-soft);display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:11px;font-weight:600;text-align:center;cursor:pointer}
+.ref.r-add:hover,.ref.r-add:focus-visible{border-color:var(--pink);color:var(--pink)}
+/* a real reference: the thumb that travelled in from the garden or was added here */
+.ref.has{background-size:cover;background-position:center}
+/* name-only (an upload label whose thumb didn't fit the pocket) */
+.ref.plain{background:linear-gradient(150deg,#262028,#191519)}
 
 .feat-scroll{overflow-y:auto;padding:10px 14px 14px;flex:1}
 .feat-group{margin-bottom:12px}
@@ -175,7 +185,8 @@ a.brand:hover::before{box-shadow:0 0 22px rgba(255,143,194,.9)}
 .btn:disabled:hover{border-color:var(--line);color:var(--ink)}
 .btn.primary{background:var(--pink-hot);color:#28121c;border:none;box-shadow:0 14px 34px -14px rgba(255,143,194,.8)}
 .btn.primary:hover{transform:translateY(-1px);color:#28121c}
-.btn.primary:disabled{transform:none;box-shadow:none}
+/* disabled must read as OFF, not as a clickable pink button at 40% */
+.btn.primary:disabled{transform:none;box-shadow:none;background:#292127;color:#84737c;opacity:1}
 .locknote{font-family:'Gochi Hand',cursive;font-size:12.5px;color:var(--ink-soft);text-align:center;line-height:1.5}
 
 .varzone{padding:13px 15px 15px}
@@ -183,6 +194,12 @@ a.brand:hover::before{box-shadow:0 0 22px rgba(255,143,194,.9)}
 .varhead h3{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--ink-soft)}
 .varhead .vn{font-family:'Gochi Hand',cursive;font-size:13px;color:var(--ink-soft)}
 .vargrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+/* before anything is generated the row explains itself, instead of four empty boxes */
+.varempty{grid-column:1/-1;min-height:120px;display:flex;align-items:center;justify-content:center;text-align:center;
+  border:1.5px dashed #ffffff18;border-radius:10px;font-family:'Gochi Hand',cursive;font-size:13.5px;
+  color:var(--ink-soft);line-height:1.9;padding:16px}
+.varempty b{color:var(--butter);font-weight:600}
+.frow .rd{font-family:'Space Mono',monospace;font-size:9.5px;color:var(--ink-soft);font-weight:400}
 /* the generated preview: one candidate, sitting above the sketch variations */
 .aiwrap{display:none;margin:0 0 12px}
 .aiwrap.on{display:block}
@@ -198,8 +215,16 @@ a.brand:hover::before{box-shadow:0 0 22px rgba(255,143,194,.9)}
 .var.filled:hover{border-color:var(--pink)}
 .var.sel{border-color:var(--pink);box-shadow:0 0 0 1.5px var(--pink), 0 12px 30px -12px rgba(255,143,194,.5)}
 .var svg{width:100%;height:100%;display:block}
-.var .vcap{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;align-items:center;
+/* the AI-inked sketch fades in over the instant SVG; the SVG stays underneath
+   as the fallback, so a failed ink just leaves the tile as it was */
+.var img.sk{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .4s}
+.var img.sk.on{opacity:1}
+@media (prefers-reduced-motion:reduce){.var img.sk{transition:none}}
+.var .inking{position:absolute;top:8px;left:50%;transform:translateX(-50%);font-family:'Space Mono',monospace;
+  font-size:8.5px;letter-spacing:.08em;color:var(--ink-soft);background:rgba(0,0,0,.55);border-radius:999px;padding:3px 9px}
+.var .vcap{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;align-items:flex-end;
   padding:5px 8px;font-family:'Space Mono',monospace;font-size:9px;color:var(--ink-soft);background:linear-gradient(transparent, rgba(0,0,0,.72))}
+.var .vcap span{text-align:right;margin-left:8px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .var.sel .vcap b{color:var(--pink)}
 .var .pick{position:absolute;top:6px;right:6px;font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.06em;
   background:var(--pink);color:#28121c;border-radius:999px;padding:3px 8px;opacity:0;transition:opacity .15s;pointer-events:none}
@@ -264,6 +289,7 @@ a.brand:hover::before{box-shadow:0 0 22px rgba(255,143,194,.9)}
 <header class="topbar">
   <a class="brand" href="innovogue-v23.html" title="Back to the Innovogue studio site">Design <em>Diffusion</em></a>
   <nav><a href="home.html">Home</a><a href="start.html">Start</a><a class="active" href="mvp_v6.html">Canvas</a><a href="library.html">Library</a></nav>
+  <button class="savebtn" id="btnSave" disabled title="Archive this canvas as a workflow in your library">Save to library</button>
   <div class="count-tag" id="countTag">Your canvas · <b>0 ideas</b></div>
 </header>
 
@@ -274,12 +300,13 @@ a.brand:hover::before{box-shadow:0 0 22px rgba(255,143,194,.9)}
     <div class="panel">
       <div class="panel-h"><h2>Reference Images</h2>
         <p>AI extracts features from these.</p></div>
-      <div class="refs">
+      <div class="refs" id="refPanel">
         <div class="ref r-butterfly on"><span>Butterfly</span></div>
         <div class="ref r-earth on"><span>Cracked Earth</span></div>
         <div class="ref r-tear on"><span>Teal Gradient</span></div>
-        <div class="ref r-add">+ Add<br>reference</div>
+        <div class="ref r-add" role="button" tabindex="0">+ Add<br>reference</div>
       </div>
+      <input type="file" id="refFile" accept="image/*" hidden>
     </div>
     <div class="panel" style="flex:1;display:flex;flex-direction:column;min-height:0">
       <div class="panel-h"><h2>Design Features</h2>
@@ -400,7 +427,7 @@ const POSES = [
   {k:"walking", label:"Walking",     rot:-2.4,hx:-2 },
   {k:"hip",     label:"Hand on hip", rot:1.8, hx:2 },
 ];
-const state = { cards:[], sil:null, pose:null, locked:false, vars:[], sel:null, drawerSeen:false, controls:[] };
+const state = { cards:[], sil:null, pose:null, locked:false, vars:[], sel:null, drawerSeen:false, controls:[], fabric:"silk or chiffon" };
 let uid = 0;
 
 /* =============== arriving from the garden =============== */
@@ -412,8 +439,10 @@ let uid = 0;
    the category on each word is the backstage translation start.html never had
    to show: "ripple hem" arrives already knowing it is a Silhouette, so it
    files itself under the right heading with no dropdown anywhere. */
+const wfParam = new URLSearchParams(location.search).get("wf");
 const incoming = DD.readIncoming();
-if(incoming.pocket.words.length){
+/* a ?wf= link reopens an archived canvas; the pocket must not overwrite it */
+if(!wfParam && incoming.pocket.words.length){
   const lit = DD.textWords(incoming.pocket);
   FEATURES = lit.map((w,i)=>({
     id: "p"+i,
@@ -435,6 +464,79 @@ function pick3(arr, seed){
   for(let i=0;i<3 && a.length;i++){ out.push(a.splice((seed+i*2)%a.length,1)[0]); }
   return out;
 }
+
+/* =============== reference images panel =============== */
+/* The panel used to be three hard-coded demo tiles whatever you arrived
+   with, and "+ Add reference" was a dead div under a caption promising "AI
+   extracts features from these". Now it shows the references this session
+   actually came from (an upload brings its own thumb through the pocket),
+   and adding one here really extracts features: the same /api/grow reading
+   that names uploads in the garden, classified into the left palette. */
+const GALLERY_PIX = { "Betta Fish":"images/ref01.png", "Orchid":"images/ref02.png", "Calla Lily":"images/ref03.png", "Jellyfish":"images/ref04.png" };
+const DEMO_CLS = { "Butterfly":"r-butterfly", "Cracked Earth":"r-earth", "Teal Gradient":"r-tear" };
+const DEMO_REFS = [{name:"Butterfly",img:null},{name:"Cracked Earth",img:null},{name:"Teal Gradient",img:null}];
+let REFS = []; /* {name, img|null}; empty = bare visit, demo trio shows */
+if(!wfParam && incoming.pocket.words.length && incoming.pocket.refs.length){
+  /* thumbs never fit in the seed link, so a link arrival borrows them from
+     the stored pocket when it is the same session's — transport vs
+     optimisation, same rule as the words themselves */
+  let imgs = incoming.pocket.refImgs;
+  if(!imgs){
+    const stored = DD.loadPocket();
+    if(stored.refImgs && stored.refs.join("|") === incoming.pocket.refs.join("|")) imgs = stored.refImgs;
+  }
+  REFS = incoming.pocket.refs.map((r,i)=>({ name:r, img:(imgs||[])[i]||null }));
+}
+const refPanel = document.getElementById("refPanel");
+const refFile = document.getElementById("refFile");
+const escRef = s => String(s||"").replace(/[<>&"]/g,"");
+function refTile(r){
+  const img = r.img || GALLERY_PIX[r.name] || null;
+  const cls = img ? " has" : (DEMO_CLS[r.name] ? " "+DEMO_CLS[r.name] : " plain");
+  return '<div class="ref on'+cls+'"'+(img ? ' style="background-image:url(\''+img+'\')"' : '')+'><span>'+escRef(r.name)+'</span></div>';
+}
+function renderRefs(){
+  refPanel.innerHTML = (REFS.length ? REFS : DEMO_REFS).map(refTile).join("")
+    + '<div class="ref r-add" role="button" tabindex="0" aria-label="add a reference image">+ Add<br>reference</div>';
+}
+refPanel.addEventListener("click", e=>{ if(e.target.closest(".r-add")) refFile.click(); });
+refPanel.addEventListener("keydown", e=>{ if((e.key==="Enter"||e.key===" ") && e.target.closest(".r-add")){ e.preventDefault(); refFile.click(); } });
+refFile.addEventListener("change", async ()=>{
+  const f = refFile.files[0]; refFile.value = "";
+  if(!f || !f.type.startsWith("image/")){ flashSub("that file isn't an image — JPG, PNG or WEBP"); return; }
+  const raw = await new Promise(res=>{ const rd=new FileReader(); rd.onload=()=>res(rd.result); rd.onerror=()=>res(null); rd.readAsDataURL(f); });
+  const prep = raw && await DD.prepRefImage(raw);
+  if(!prep){ flashSub("couldn't read that image — try JPG, PNG or WEBP"); return; }
+  /* adding to the demo canvas keeps the demo refs: the demo features still
+     credit them as source, and a panel that dropped them would be lying */
+  if(!REFS.length) REFS = DEMO_REFS.map(d=>({name:d.name, img:null}));
+  const ref = { name:"reading…", img: prep.thumb };
+  REFS.push(ref); renderRefs();
+  const d = await DD.describeImage(prep.src);
+  let label, words;
+  if(d){
+    label = escRef(d.label).slice(0,40) || "your reference";
+    words = d.words.map(escRef).filter(Boolean);
+  } else {
+    /* offline / budget spent: the tile stays, features come from the canned
+       engine, and the sub says so instead of pretending */
+    label = "your reference";
+    words = (await DD.cannedEngine().grow("your image", { avoid: FEATURES.map(x=>x.val) }))
+      .filter(s=>s.kind==="word").map(s=>s.text);
+  }
+  ref.name = label; renderRefs();
+  const added = [];
+  words.slice(0,4).forEach(w=>{
+    if(FEATURES.some(x=>x.val.toLowerCase()===w.toLowerCase())) return;
+    FEATURES.push({ id:"x"+(++uid), val:w, type: DD.classifyWord(w).category, source: label });
+    added.push(w);
+  });
+  renderFeatures(); scheduleAutosave();
+  flashSub(d ? '“'+label+'” — '+added.length+' features extracted · drag one in.'
+             : "couldn't reach the model — canned features added instead.");
+});
+function flashSub(msg){ const sub = document.getElementById("featSub"); if(sub) sub.textContent = msg; }
+renderRefs();
 
 /* =============== left: tags =============== */
 const featList = document.getElementById("featList");
@@ -673,6 +775,7 @@ function renderNodes(){
 
 /* threads: seed → its readings */
 function drawThreads(){
+  scheduleAutosave(); /* card & petal drags end here without a refresh() */
   const r = board.getBoundingClientRect();
   threads.setAttribute("viewBox", `0 0 ${r.width} ${r.height}`);
   let out = "";
@@ -737,15 +840,25 @@ function syncModelUI(){
 /* same contract as everywhere else: the model proposes ONE candidate from
    the formula the user composed; keeping it, re-rolling it, or ignoring it
    is curation, and the sketch variations below never stop working. */
-function formulaPayload(){
-  const take = t => byType(t).flatMap(cd => {
-    const reads = adoptedLabels(cd);
-    return reads.length ? reads.map(r => cd.val + " (" + r + ")") : [cd.val];
-  });
+/* one card -> one ingredient: the value, its origin, the adopted readings.
+   src/weave.ts turns these into sentences on both sides of the wire, so
+   nothing is flattened into "val (reading)" soup here anymore. */
+function ingredientOf(cd){
+  return { val: cd.val, source: cd.source==="You" ? "" : (cd.source||""), reads: adoptedLabels(cd) };
+}
+function formulaPayload(bare){
+  const take = t => byType(t).map(ingredientOf);
+  const notes = take("Custom");
+  /* a picked sketch rides into the render prompt, so the AI preview and the
+     variation the user chose stay one design, not two. `bare` skips that:
+     inking a tile must follow its own recipe, not the picked one's. */
+  const pv = !bare && state.sel!=null && state.vars[state.sel] && state.vars[state.sel]!=="loading" ? state.vars[state.sel] : null;
+  if(pv) notes.push({ val:`follow the picked sketch: ${pv.neckline} neck, ${pv.sleeve==="none" ? "no sleeve" : pv.sleeve+" sleeve"}, ${pv.hem==="highlow" ? "high-low" : pv.hem} hem, ${pv.volume}`, source:"", reads:[] });
   return {
     silhouette: silLabel() || "", pose: poseLabel() || "",
     colors: take("Color"), form: take("Silhouette"), surface: take("Pattern"),
-    mood: take("Symbolic"), notes: take("Custom"), controls: state.controls.slice(0, 8),
+    mood: take("Symbolic"), notes, controls: state.controls.slice(0, 8),
+    fabric: state.fabric,
   };
 }
 btnRender.addEventListener("click", async ()=>{
@@ -756,108 +869,347 @@ btnRender.addEventListener("click", async ()=>{
   const src = await DD.growImage({ kind:"render", formula: formulaPayload() }, { timeoutMs: 45000 });
   rendering = false; btnRender.textContent = "AI preview"; syncModelUI();
   if(src){
-    aiWrap.innerHTML = '<figure class="aicard"><img alt="AI preview rendered from your design formula" src="' + src + '">' +
-      '<figcaption>one reading of your formula, not the answer —<br>adjust the canvas and render again, or trust the sketches.<br>' +
-      '<button class="btn" id="aiAgain">render again</button></figcaption></figure>';
-    document.getElementById("aiAgain").addEventListener("click", ()=>btnRender.click());
+    showRender(src);
+    scheduleAutosave();
   } else {
     aiWrap.innerHTML = '<div class="aiload">couldn’t render — offline, or the AI budget is spent. the sketch variations below still work.</div>';
   }
 });
 
-/* =============== gown rendering =============== */
+/* =============== croquis sketches =============== */
+/* the sketch layer is a recipe renderer, not a picture generator: every
+   variation is a closed set of axes (neckline / sleeve / hem / volume /
+   motif / palette / where the one accent lands) and the drawing follows the
+   recipe, so two different recipes can never produce the same tile. */
 function byType(t){ return state.cards.filter(c=>c.type===t); }
 function adoptedLabels(cd){ return (cd.adopted||[]).map(i=>cd.readings[i].label); }
-function gownColors(seed){
-  const v = byType("Color").map(c=>c.val).join(" ");
-  let base;
-  if(/teal|green/.test(v)) base = [["#A9C77F","#E7E0A8"],["#8FB56B","#DCEDC2"]];
-  else if(/earthy|warm/.test(v)) base = [["#8A6A48","#C9A876"],["#A07C52","#E0C79A"]];
-  else if(/airy|layer/.test(v)) base = [["#FF8FC2","#F3DCE7"],["#F7A9CF","#FBEAF2"]];
-  else base = [["#FF8FC2","#EDE4A2"],["#EDA9C9","#F5EFC4"]];
-  return base[seed % base.length];
+
+const INK = "#E9E2CE";
+const AXES = {
+  neckline:["v","scoop","square","high","strapless"],
+  sleeve:["none","cap","puff","long"],
+  hem:["straight","asymmetric","scalloped","highlow"],
+  volume:["slim","soft","full"],
+  motif:["none","rays","cracks","drops","petals","specks"],
+  density:["sparse","medium","dense"],
+  accentOn:["waist","neck","sleeve","hem"],
+};
+/* seeded, so a tile redraws identically on every refresh until rerolled */
+function rng(seed){ let s=(seed>>>0)%2147483646+1; return ()=>{ s=s*16807%2147483647; return (s-1)/2147483646; }; }
+
+function paletteFromWords(all){
+  if(/teal|green/.test(all))       return { base:"#7FA98C", wash:"#DCE8CF", accent:"#EDE4A2" };
+  if(/earthy|warm|clay/.test(all)) return { base:"#B08D5F", wash:"#E6D3AC", accent:"#FF8FC2" };
+  if(/airy|layer|light/.test(all)) return { base:"#E7A9C6", wash:"#F6E6EE", accent:"#EDE4A2" };
+  return { base:"#D5A9BC", wash:"#EFE6CF", accent:"#FF8FC2" };
 }
-function skirtPath(silKey, seed){
-  const j = (seed%3)*2;
-  if(silKey==="column")  return `M52 66 C 36 100 34 135 36 150 L 84 150 C 86 135 84 100 68 66 C 64 70 56 70 52 66 Z`;
-  if(silKey==="mermaid") return `M52 66 C 44 95 44 112 50 122 C 36 132 30 ${142+j} 28 150 L 92 150 C 90 ${142+j} 84 132 70 122 C 76 112 76 95 68 66 C 64 70 56 70 52 66 Z`;
-  if(silKey==="ballgown")return `M52 66 C 20 86 ${10-j} 120 12 150 L 108 150 C ${110+j} 120 100 86 68 66 C 64 70 56 70 52 66 Z`;
-  if(silKey==="xline")   return `M52 66 C 50 76 50 82 52 88 C 32 108 ${22-j} 132 20 150 L 100 150 C ${98+j} 132 88 108 68 88 C 70 82 70 76 68 66 C 64 70 56 70 52 66 Z`;
-  return `M52 66 C ${26-j} 100 ${22-j} 135 22 150 L 98 150 C ${98+j} 135 ${94+j} 100 68 66 C 64 70 56 70 52 66 Z`;
+
+/* anything arriving from the engine or a save gets clamped to the vocabulary */
+function fixupVar(v){
+  v = v && typeof v==="object" ? v : {};
+  const pick = (axis, fb)=>AXES[axis].includes(v[axis]) ? v[axis] : fb;
+  const hex = /^#[0-9a-fA-F]{6}$/;
+  const p = v.palette || {};
+  const pal = [p.base,p.wash,p.accent].every(c=>typeof c==="string" && hex.test(c))
+    ? { base:p.base, wash:p.wash, accent:p.accent } : paletteFromWords("");
+  const out = {
+    neckline: pick("neckline","scoop"), sleeve: pick("sleeve","none"),
+    hem: pick("hem","straight"), volume: pick("volume","soft"),
+    motif: pick("motif","none"), density: pick("density","medium"),
+    accentOn: pick("accentOn","waist"), palette: pal,
+    note: String(v.note||"").slice(0,70),
+    seed: (typeof v.seed==="number" && v.seed>0) ? v.seed : Math.floor(Math.random()*997)+1,
+  };
+  if(out.neckline==="strapless") out.sleeve = "none";
+  if(out.accentOn==="sleeve" && out.sleeve==="none") out.accentOn = "waist";
+  return out;
 }
-function renderGown(svg, seed=0){
-  const [c1,c2] = gownColors(seed);
+
+function drawCroquis(svg, v){
   const pose = POSES.find(p=>p.k===state.pose) || POSES[0];
-  const gid = "g"+Math.random().toString(36).slice(2,7);
-  let pat = "";
-  byType("Pattern").forEach(cd=>{
-    const rd = adoptedLabels(cd).join(" ");
-    const dense = /all-over/.test(rd) ? 9 : /bold/.test(rd) ? 1 : 5;
-    const big = /large|bold/.test(rd) ? 1.6 : /tiny/.test(rd) ? .7 : 1;
-    const op = /faded|ghost/.test(rd) ? .2 : .45;
-    if(/teardrop/.test(cd.val)) for(let i=0;i<dense;i++){
-      const x=44+((i*13+seed*7)%32), y=95+((i*17+seed*5)%44);
-      pat += `<path d="M${x} ${y} q${4*big} ${6*big} 0 ${10*big} q${-4*big} ${-4*big} 0 ${-10*big}" fill="rgba(255,255,255,${op})"/>`;
+  const P = v.palette;
+  const f = v.volume==="slim" ? .82 : v.volume==="full" ? 1.18 : 1;
+  const gid = "vg"+Math.random().toString(36).slice(2,7);
+
+  /* skirt: waist (53.5/66.5 at y63) down to a hem shaped by the axes */
+  const HW = { column:15, aline:30, xline:35, mermaid:30, ballgown:44 };
+  const W = Math.min(46, (HW[state.sil]||30)*f);
+  const [yl,yr] = { straight:[146,146], asymmetric:[137,150], scalloped:[146,146], highlow:[150,150] }[v.hem];
+  const xl = 60-W, xr = 60+W;
+  function sideSegs(sgn, ex, ey){ /* cubic segments, waist -> hem */
+    if(state.sil==="mermaid") return [
+      [60+sgn*7, 94, 60+sgn*5.5, 108, 60+sgn*5, 118],
+      [60+sgn*(W*.55+5), 128, ex, ey-8, ex, ey],
+    ];
+    if(state.sil==="column")   return [[60+sgn*8, 90, ex-sgn*1.5, 118, ex, ey]];
+    if(state.sil==="ballgown") return [[60+sgn*(W*.55), 78, ex, ey-42, ex, ey]];
+    if(state.sil==="xline")    return [[60+sgn*7.5, 86, 60+sgn*W*.72, 112, ex, ey]];
+    return [[60+sgn*8, 90, 60+sgn*W*.85, 118, ex, ey]]; /* aline + default */
+  }
+  const fwd = s => s.map(g=>`C ${g[0]} ${g[1]} ${g[2]} ${g[3]} ${g[4]} ${g[5]}`).join(" ");
+  function rev(s, sx, sy){ /* the same curve walked hem -> waist */
+    const pts = [[sx,sy], ...s.map(g=>[g[4],g[5]])];
+    let out = "";
+    for(let i=s.length-1;i>=0;i--) out += `C ${s[i][2]} ${s[i][3]} ${s[i][0]} ${s[i][1]} ${pts[i][0]} ${pts[i][1]} `;
+    return out.trim();
+  }
+  function hemEdge(){
+    if(v.hem==="highlow") return `Q 60 ${yl-24} ${xr} ${yr}`;
+    if(v.hem==="scalloped"){
+      const n=4, step=(xr-xl)/n; let d="";
+      for(let i=0;i<n;i++) d += `Q ${xl+step*(i+.5)} ${yl+7} ${xl+step*(i+1)} ${yl} `;
+      return d.trim();
     }
-    if(/symmetry/.test(cd.val)) for(let a=-2;a<=2;a++)
-      pat += `<line x1="60" y1="72" x2="${60+a*16*big}" y2="146" stroke="rgba(255,255,255,${op*.8})" stroke-width="1"/>`;
-    if(/crack/.test(cd.val))
-      pat += `<path d="M50 100 l4 8 l-3 7 M70 92 l-3 9 l4 8 M60 110 l3 10" stroke="rgba(20,12,5,.35)" stroke-width="${big*.8}" fill="none"/>`;
-    if(/translucent|wings/.test(cd.val))
-      pat += `<ellipse cx="48" cy="108" rx="${10*big}" ry="${18*big}" fill="rgba(255,255,255,${op*.4})"/><ellipse cx="72" cy="116" rx="${10*big}" ry="${18*big}" fill="rgba(255,255,255,${op*.4})"/>`;
-  });
+    return `Q 60 ${(yl+yr)/2+4} ${xr} ${yr}`; /* straight + asymmetric */
+  }
+  const L = sideSegs(-1, xl, yl), R = sideSegs(1, xr, yr);
+  const skirt = `M 53.5 63 ${fwd(L)} ${hemEdge()} ${rev(R, 66.5, 63)} Z`;
+
+  /* bodice with its neckline */
+  const neckSeg = {
+    v:      "L60 45 L66 27",
+    scoop:  "Q60 43 66 27",
+    square: "L54 40 L66 40 L66 27",
+    high:   "Q60 33 66 27",
+  }[v.neckline];
+  const bodice = v.neckline==="strapless"
+    ? "M53.5 63 C52.5 52 51.5 44 52 37 Q60 41.5 68 37 C68.5 44 67.5 52 66.5 63 Z"
+    : `M53.5 63 C52.5 52 51 40 47.5 27 L54 27 ${neckSeg} L66 27 L72.5 27 C69 40 67.5 52 66.5 63 Z`;
+
+  const SLV = {
+    cap:  ["M47.5 27 Q42.5 31 45.5 37 Q49 38.5 51 34.5", "M72.5 27 Q77.5 31 74.5 37 Q71 38.5 69 34.5"],
+    puff: ["M47.5 27 Q39.5 29 41 39 Q44.5 44 50.5 39.5", "M72.5 27 Q80.5 29 79 39 Q75.5 44 69.5 39.5"],
+    long: ["M47.5 27 C44.5 38 44.5 50 46.5 61 L51 59.5", "M72.5 27 C75.5 38 75.5 50 73.5 61 L69 59.5"],
+  };
+  const sleeves = (v.neckline!=="strapless" && SLV[v.sleeve]) ? SLV[v.sleeve] : null;
+
+  /* motifs live inside the skirt, clipped to it */
+  const rand = rng(v.seed*7919+3);
+  const count = v.density==="dense" ? 11 : v.density==="sparse" ? 3 : 6;
+  const hemTop = Math.min(yl,yr);
+  const inSkirt = () => [60+(rand()-.5)*W*1.5, 84+rand()*(hemTop-92)];
+  let motifs = "";
+  if(v.motif==="rays"){
+    const k = v.density==="dense" ? 9 : v.density==="sparse" ? 3 : 5;
+    for(let i=0;i<k;i++){ const t=(i+.5)/k;
+      motifs += `<line x1="60" y1="66" x2="${xl+(xr-xl)*t}" y2="${yl+(yr-yl)*t}" stroke="${P.wash}" stroke-opacity=".4" stroke-width=".9"/>`; }
+  } else if(v.motif==="cracks"){
+    for(let i=0;i<count;i++){ const [x,y]=inSkirt();
+      motifs += `<path d="M${x} ${y} l${rand()>.5?3:-3} 5 l${rand()>.5?-2:2} 6 l${rand()>.5?3:-3} 6" stroke="${P.wash}" stroke-opacity=".45" stroke-width=".8" fill="none"/>`; }
+  } else if(v.motif==="drops"){
+    for(let i=0;i<count;i++){ const [x,y]=inSkirt();
+      motifs += `<path d="M${x} ${y} q3.2 4.8 0 8 q-3.2 -3.2 0 -8" fill="${P.wash}" fill-opacity=".5"/>`; }
+  } else if(v.motif==="petals"){
+    const k = Math.max(3, Math.round(count*.8));
+    for(let i=0;i<k;i++){ const t=(i+.5)/k;
+      motifs += `<path d="M${xl+(xr-xl)*t-6} ${hemTop-8-rand()*14} q6 -9 12 0" stroke="${P.wash}" stroke-opacity=".55" stroke-width="1" fill="none"/>`; }
+  } else if(v.motif==="specks"){
+    for(let i=0;i<count+3;i++){ const [x,y]=inSkirt();
+      motifs += `<circle cx="${x}" cy="${y}" r=".9" fill="${P.wash}" fill-opacity=".6"/>`; }
+  }
+
+  /* the single accent: one detail at 120%, everything else stays quiet */
+  let accent;
+  if(v.accentOn==="neck")
+    accent = v.neckline==="strapless"
+      ? `<path d="M52 37 Q60 41.5 68 37" stroke="${P.accent}" stroke-width="1.8" fill="none" stroke-linecap="round"/>`
+      : `<path d="M54 27 ${neckSeg}" stroke="${P.accent}" stroke-width="1.8" fill="none" stroke-linecap="round"/>`;
+  else if(v.accentOn==="sleeve" && sleeves)
+    accent = sleeves.map(d=>`<path d="${d}" stroke="${P.accent}" stroke-width="1.6" fill="none" stroke-linecap="round"/>`).join("");
+  else if(v.accentOn==="hem")
+    accent = `<path d="M ${xl} ${yl} ${hemEdge()}" stroke="${P.accent}" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+  else
+    accent = `<path d="M53.2 61.6 L66.8 61.6 L66.4 65 L53.6 65 Z" fill="${P.accent}" fill-opacity=".9"/>`;
+
   svg.innerHTML = `
-    <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/>
-    </linearGradient></defs>
-    <g transform="rotate(${pose.rot} 60 100)">
-      <circle cx="${60+pose.hx}" cy="16" r="8" fill="#EDE4A2"/>
-      <path d="M60 26 C52 30 50 36 51 48 C52 60 54 66 60 70 C66 66 68 60 69 48 C70 36 68 30 60 26 Z" fill="url(#${gid})"/>
-      <path d="${skirtPath(state.sil, seed)}" fill="url(#${gid})" opacity=".96"/>
-      ${pat}
+    <defs>
+      <linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="${P.base}"/><stop offset="1" stop-color="${P.wash}"/>
+      </linearGradient>
+      <clipPath id="${gid}c"><path d="${skirt}"/></clipPath>
+    </defs>
+    <g transform="rotate(${pose.rot} 60 100)" stroke-linejoin="round">
+      <ellipse cx="${60+pose.hx}" cy="13" rx="5.4" ry="6.6" fill="none" stroke="${INK}" stroke-opacity=".8" stroke-width="1.1"/>
+      <path d="M${57.6+pose.hx*.6} 19.5 L57.4 27 M${62.4+pose.hx*.6} 19.5 L62.6 27" stroke="${INK}" stroke-opacity=".7" stroke-width="1" fill="none"/>
+      <path d="${bodice}" fill="url(#${gid})" fill-opacity=".28" stroke="${INK}" stroke-width="1.3"/>
+      ${sleeves ? sleeves.map(d=>`<path d="${d}" fill="none" stroke="${INK}" stroke-opacity=".85" stroke-width="1.1" stroke-linecap="round"/>`).join("") : ""}
+      <path d="${skirt}" fill="url(#${gid})" fill-opacity=".32" stroke="${INK}" stroke-width="1.4"/>
+      <g clip-path="url(#${gid}c)">${motifs}</g>
+      ${accent}
     </g>`;
 }
 
 /* =============== variations =============== */
 const varGrid = document.getElementById("varGrid");
 const varNote = document.getElementById("varNote");
+let varsSource = null; /* "ai" | "local", for the honest little status line */
+
+/* mood words nudge the whole batch before the axes fan out */
+const MOODMAP = [
+  [/romantic|delicate|graceful|soft|whisper/, {neckline:"scoop", sleeve:"puff", hem:"scalloped", volume:"soft"}],
+  [/stark|solemn|structured|sharp/,           {neckline:"high",  sleeve:"none", hem:"straight",  volume:"slim"}],
+  [/playful|airy|light/,                      {neckline:"square",sleeve:"cap",  hem:"asymmetric",volume:"soft"}],
+  [/barely|ghost|quiet|faded/,                {neckline:"strapless", sleeve:"none", hem:"highlow", volume:"slim"}],
+  [/bold|exagger|dramatic|transform|rebirth/, {neckline:"v", sleeve:"long", hem:"highlow", volume:"full"}],
+];
+function leadReading(){
+  for(const c of state.cards){ const l = adoptedLabels(c); if(l.length) return l[0]; }
+  return null;
+}
+/* offline expansion: same recipe shape the engine returns, derived from the
+   canvas by keyword. each tile owns one design axis so the four always differ. */
+function expandLocal(){
+  const F = formulaPayload();
+  const words = a => a.map(i => i.val + " " + (i.reads||[]).join(" ")).join(" ");
+  const all = [words(F.mood), words(F.surface), words(F.form), words(F.colors), words(F.notes), F.controls.join(" ")].join(" ").toLowerCase();
+  const hit = MOODMAP.find(([re])=>re.test(all));
+  const bias = hit ? hit[1] : {};
+  const motif = /radiat|symmetr|ray/.test(all) ? "rays"
+    : /crack/.test(all) ? "cracks"
+    : /teardrop|drop/.test(all) ? "drops"
+    : /wing|translucent|petal|scallop/.test(all) ? "petals"
+    : /speck|tiny|dot/.test(all) ? "specks" : "none";
+  const density = /all-over|tiny|dense/.test(all) ? "dense"
+    : /one bold|sparse|placement/.test(all) ? "sparse" : "medium";
+  const pal = paletteFromWords(all);
+  const base = { neckline: bias.neckline||"scoop", sleeve: bias.sleeve||"none",
+    hem: bias.hem||"straight", volume: bias.volume||"soft", motif, density, palette: pal };
+  const next = (arr,cur,step)=>arr[((arr.indexOf(cur)+step)%arr.length+arr.length)%arr.length];
+  const lead = leadReading();
+  const mk = (o, accentOn, note)=>fixupVar({ ...base, ...o, accentOn, note });
+  const n2 = next(AXES.neckline, base.neckline, 2), h1 = next(AXES.hem, base.hem, 1);
+  const s1 = next(AXES.sleeve, base.sleeve, 1),    v1 = next(AXES.volume, base.volume, 1);
+  const h2 = next(AXES.hem, base.hem, 2);
+  return [
+    mk({}, "waist", "as composed" + (lead ? `, leans "${lead}"` : "")),
+    mk({neckline:n2, hem:h1}, "neck", `neckline study, ${n2}`),
+    mk({sleeve:s1, volume:v1}, "sleeve", `${s1==="none" ? "sleeveless" : s1+" sleeve"}, ${v1} volume`),
+    mk({hem:h2, density: density==="dense" ? "sparse" : "dense",
+        palette:{ base:pal.wash, wash:pal.base, accent:pal.accent }}, "hem",
+       `${h2==="highlow" ? "high-low" : h2} hem, ${motif==="none" ? "quiet surface" : "denser "+motif}`),
+  ];
+}
+/* one text call to /api/vary; any failure (offline, budget, 5xx) -> null and
+   the caller expands locally instead. the button never dies. */
+async function varyFor(formula){
+  const ctl = new AbortController();
+  const t = setTimeout(()=>ctl.abort(), 12000);
+  try{
+    const res = await fetch("/api/vary", { method:"POST",
+      headers:{ "content-type":"application/json" },
+      body: JSON.stringify({ formula }), signal: ctl.signal });
+    if(!res.ok) return null;
+    const data = await res.json();
+    const vs = (Array.isArray(data.variations) ? data.variations : []).slice(0,4).map(fixupVar);
+    return vs.length ? vs : null;
+  }catch{ return null; }
+  finally{ clearTimeout(t); }
+}
+/* each recipe then gets inked by the image model in the grid's own croquis
+   language. the SVG underneath is the instant preview AND the fallback: a
+   failed or offline ink just leaves the tile as it already looks. */
+let inkGen = 0;
+function sketchFor(v){
+  const recipe = { neckline:v.neckline, sleeve:v.sleeve, hem:v.hem, volume:v.volume,
+    motif:v.motif, density:v.density, accentOn:v.accentOn, palette:v.palette };
+  return DD.growImage({ kind:"sketch", recipe, formula: formulaPayload(true) }, { timeoutMs:45000, maxPx:640 });
+}
+function inkVariations(indices){
+  const gen = ++inkGen;
+  const idx = (indices || [0,1,2,3]).filter(i=>state.vars[i] && state.vars[i]!=="loading");
+  idx.forEach(i=>{ state.vars[i].imgState = "loading"; });
+  renderVars();
+  idx.forEach(async i=>{
+    const v = state.vars[i];
+    const src = await sketchFor(v);
+    /* a regenerate or reroll in the meantime owns the tile now */
+    if(gen !== inkGen || state.vars[i] !== v) return;
+    v.img = src; v.imgState = src ? "done" : "failed"; v.imgFresh = !!src;
+    renderVars();
+  });
+}
+
 function renderVars(){
   varGrid.innerHTML = "";
-  for(let i=0;i<4;i++){
+  const any = state.vars.some(v=>v && v!=="loading");
+  const loading = state.vars.some(v=>v==="loading");
+  if(!state.vars.length){
+    const d = document.createElement("div");
+    d.className = "varempty";
+    d.innerHTML = (state.locked && state.cards.length)
+      ? "hit <b>Generate variations</b>, four readings of one body land here"
+      : "lock a model, keep features on the canvas,<br>and four sketch readings will fill this row";
+    varGrid.appendChild(d);
+  } else for(let i=0;i<4;i++){
     const v = document.createElement("div");
-    if(state.vars[i]==="loading"){ v.className="var shimmer"; }
-    else if(state.vars[i]){
-      v.className = "var filled" + (state.sel===i ? " sel":"");
-      v.innerHTML = `<svg viewBox="0 0 120 160"></svg>
-        <span class="pick">${state.sel===i?"PICKED ✓":"PICK"}</span>
-        <button class="vre" title="Reroll only this one">↻</button>
-        <div class="vcap"><b>VAR_0${i+1}</b><span>${silLabel()||""}</span></div>`;
-      renderGown(v.querySelector("svg"), state.vars[i].seed);
-      v.querySelector(".vre").addEventListener("click", e=>{ e.stopPropagation(); rerollVar(i); });
-      v.addEventListener("click", ()=>{ state.sel = state.sel===i ? null : i; renderVars(); renderForm(); pulseDrawer(); });
+    const it = state.vars[i];
+    if(it==="loading"){ v.className = "var shimmer"; }
+    else if(it){
+      /* the tile IS the inked sketch. while it's in flight the tile shimmers;
+         the SVG croquis appears only if the ink never arrives. */
+      const inking = it.imgState==="loading";
+      const showSvg = !it.img && !inking;
+      v.className = "var filled" + (state.sel===i ? " sel":"") + (inking ? " shimmer":"");
+      v.innerHTML = `${showSvg ? `<svg viewBox="0 0 120 160"></svg>` : ""}
+        ${it.img ? `<img class="sk" alt="AI-inked sketch of variation ${i+1}" src="${it.img}">` : ""}
+        ${inking ? `<span class="inking">inking…</span>` : `<span class="pick">${state.sel===i?"PICKED ✓":"PICK"}</span>
+        <button class="vre" title="Reroll only this one">↻</button>`}
+        <div class="vcap"><b>VAR_0${i+1}</b><span>${it.note || silLabel() || ""}</span></div>`;
+      if(showSvg) drawCroquis(v.querySelector("svg"), it);
+      const img = v.querySelector("img.sk");
+      if(img){
+        if(it.imgFresh){ it.imgFresh = false; requestAnimationFrame(()=>requestAnimationFrame(()=>img.classList.add("on"))); }
+        else img.classList.add("on");
+      }
+      if(!inking){
+        v.querySelector(".vre").addEventListener("click", e=>{ e.stopPropagation(); rerollVar(i); });
+        v.addEventListener("click", ()=>{ state.sel = state.sel===i ? null : i; renderVars(); renderForm(); pulseDrawer(); });
+      }
     }
-    else { v.className="var"; v.innerHTML = `<span class="ph">VARIATION_0${i+1}</span>`; }
+    else { v.className = "var"; v.innerHTML = `<span class="ph">VARIATION_0${i+1}</span>`; }
     varGrid.appendChild(v);
   }
+  const inking = state.vars.some(v=>v && v!=="loading" && v.imgState==="loading");
   varNote.textContent = state.sel!=null ? "picked · the form is written →"
-    : state.vars.length && state.vars.some(v=>v && v!=="loading") ? "click to pick · ↻ rerolls just that one"
+    : loading ? "one text call, expanding your formula…"
+    : inking ? "inking sketches, each lands as it finishes"
+    : any ? (varsSource==="local" ? "sketched locally (engine offline) · pick or ↻" : "grown from your formula · click to pick · ↻ rerolls one")
     : "";
-  btnVars.textContent = state.vars.some(v=>v && v!=="loading") ? "Regenerate all" : "Generate variations";
+  btnVars.textContent = loading ? "Expanding…" : inking ? "Inking…" : any ? "Regenerate all" : "Generate variations";
 }
+/* reroll = rotate one structural axis of that tile, then re-ink just it */
 function rerollVar(i){
   if(state.sel===i) state.sel = null;
-  state.vars[i] = "loading";
-  renderVars(); renderForm();
-  setTimeout(()=>{ state.vars[i] = { seed: Math.floor(Math.random()*80) }; renderVars(); }, 480+Math.random()*350);
+  const cur = (state.vars[i] && state.vars[i]!=="loading") ? state.vars[i] : expandLocal()[i];
+  const axes = ["neckline","hem","sleeve","volume"];
+  const axis = axes[Math.floor(Math.random()*axes.length)];
+  const pool = AXES[axis];
+  const val = pool[(pool.indexOf(cur[axis]) + 1 + Math.floor(Math.random()*(pool.length-1))) % pool.length];
+  state.vars[i] = fixupVar({ ...cur, [axis]: val, seed: Math.floor(Math.random()*997)+1,
+    note: `${axis} shift, ${val==="highlow" ? "high-low" : val}` });
+  state.vars[i].imgState = "loading"; /* straight to the shimmer, no SVG frame */
+  renderForm();
+  inkVariations([i]);
 }
-btnVars.addEventListener("click", ()=>{
+let varying = false;
+btnVars.addEventListener("click", async ()=>{
+  if(varying) return;
+  varying = true;
   state.sel = null;
   state.vars = ["loading","loading","loading","loading"];
   renderVars(); renderForm();
-  const base = Math.floor(Math.random()*40);
-  [380, 700, 1000, 1300].forEach((t,i)=>{
-    setTimeout(()=>{ state.vars[i] = { seed: base + i*3 + i }; renderVars(); }, t);
-  });
+  const grown = await varyFor(formulaPayload());
+  let vs = grown || expandLocal();
+  if(vs.length < 4) vs = vs.concat(expandLocal().slice(vs.length));
+  varsSource = grown ? "ai" : "local";
+  vs = vs.slice(0,4);
+  /* straight from recipes to inking: the four sketches generate in parallel
+     and the tiles shimmer until each ink lands. no SVG intermission. */
+  vs.forEach(v=>{ v.imgState = "loading"; });
+  state.vars = vs;
+  varying = false;
+  renderForm(); scheduleAutosave();
+  inkVariations();
 });
 
 /* =============== control net (author's own) =============== */
@@ -896,6 +1248,7 @@ function chip(cd){
 }
 function chipsOf(t){ return byType(t).map(chip).join(", "); }
 function renderForm(){
+  scheduleAutosave(); /* control-net edits re-render the form without a refresh() */
   const n = state.cards.length;
   let setCount = 0;
   const row = (k, html, fb) => {
@@ -908,7 +1261,8 @@ function renderForm(){
     return;
   }
   const modelTxt = state.locked ? `${silLabel()} · ${poseLabel()} pose` : "";
-  const varTxt = state.sel!=null ? `VAR_0${state.sel+1}` : "";
+  const pkv = state.sel!=null && state.vars[state.sel] && state.vars[state.sel]!=="loading" ? state.vars[state.sel] : null;
+  const varTxt = state.sel!=null ? `VAR_0${state.sel+1}${pkv && pkv.note ? ` <span class="rd">· ${pkv.note}</span>` : ""}` : "";
   const ctlTxt = state.controls.map(c=>`<span class="fv" style="--fc:var(--pink)">${c}</span>`).join(", ");
   formWrap.innerHTML = `<div class="formgrid">` +
     row("Category", "Long Dress", "") +
@@ -1009,7 +1363,9 @@ function refresh(){
   renderNodes();
   syncModelUI();
   renderForm();
+  scheduleAutosave();
   const n = state.cards.length;
+  btnSave.disabled = !n;
   const adopted = state.cards.filter(c=>c.adopted && c.adopted.length).length;
   document.getElementById("countTag").innerHTML = `Your canvas · <b>${n} idea${n===1?"":"s"}</b>`;
   document.getElementById("bhint").style.display = n ? "none":"block";
@@ -1018,7 +1374,117 @@ function refresh(){
   if(n===1 && !state.drawerSeen){ state.drawerSeen = true; drawer.classList.add("open");
     setTimeout(()=>drawer.classList.remove("open"), 2600); }
 }
+/* =============== the canvas, kept =============== */
+/* Save archives this canvas as a workflow the Library can reopen; the
+   autosave means walking away and coming back is no longer destructive.
+   Both are the same snapshot: cards with their positions (percent of the
+   board, so a resize doesn't scramble the composition), adopted readings,
+   the locked model, the control net, the last AI render. */
+const btnSave = document.getElementById("btnSave");
+let lastRender = null;
+let saveTimer = null;
+let restoring = false;
+/* the canvas keeps its archive identity: a reopened workflow saves back to
+   itself, and pressing save twice is an update, not a twin */
+let currentWfId = null;
+
+function showRender(src){
+  lastRender = src;
+  aiWrap.classList.add("on");
+  aiWrap.innerHTML = '<figure class="aicard"><img alt="AI preview rendered from your design formula" src="' + src + '">' +
+    '<figcaption>one reading of your formula, not the answer —<br>adjust the canvas and render again, or trust the sketches.<br>' +
+    '<button class="btn" id="aiAgain">render again</button></figcaption></figure>';
+  document.getElementById("aiAgain").addEventListener("click", ()=>btnRender.click());
+}
+
+function canvasSnapshot(){
+  const bw = board.clientWidth || 1, bh = board.clientHeight || 1;
+  return { v:1, id:"autosave", title:"", ref: incoming.pocket.ref || "", savedAt: Date.now(),
+    sil: state.sil, pose: state.pose, locked: state.locked,
+    controls: state.controls.slice(), sel: null, origin: currentWfId, render: lastRender,
+    refs: REFS.map(r=>({ name:r.name, img:r.img })),
+    features: FEATURES.map(f=>({ val:f.val, type:f.type, source:f.source||"" })),
+    cards: state.cards.map(c=>({ val:c.val, type:c.type, source:c.source||"",
+      xp: Math.round(c.x/bw*1000)/10, yp: Math.round(c.y/bh*1000)/10,
+      readings: c.readings.map(r=>({ label:r.label, seed:r.seed })),
+      adopted: (c.adopted||[]).slice() })) };
+}
+
+function scheduleAutosave(){
+  if(restoring) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    if(state.cards.length || FEATURES.length) DD.autosaveCanvas(canvasSnapshot());
+  }, 500);
+}
+/* the debounce dies with the page — flush on the way out, or the last edit
+   before a navigation is exactly the one that gets lost */
+addEventListener("pagehide", ()=>{
+  clearTimeout(saveTimer);
+  if(!restoring && (state.cards.length || FEATURES.length)) DD.autosaveCanvas(canvasSnapshot());
+});
+
+function syncChipSel(){
+  [...silChips.children].forEach((x,i)=>x.classList.toggle("sel", !!SILS[i] && SILS[i].k===state.sil));
+  [...poseChips.children].forEach((x,i)=>x.classList.toggle("sel", !!POSES[i] && POSES[i].k===state.pose));
+}
+
+function restoreCanvas(wf){
+  restoring = true;
+  currentWfId = wf.origin || currentWfId || null;
+  if(wf.features && wf.features.length){
+    FEATURES = wf.features.map((f,i)=>({ id:"r"+i, val:f.val, type:f.type, source:f.source }));
+  }
+  /* the refs panel comes back too; older snapshots only carried the ref
+     string, so fall back to splitting it into name-only tiles */
+  if(wf.refs && wf.refs.length) REFS = wf.refs.map(r=>({ name:r.name, img:r.img||null }));
+  else if(wf.ref) REFS = wf.ref.split(" + ").map(s=>s.trim()).filter(Boolean).map(name=>({ name, img:null }));
+  renderRefs();
+  state.sil = wf.sil; state.pose = wf.pose; state.locked = !!wf.locked;
+  state.controls = (wf.controls||[]).slice(); state.sel = null; state.vars = [];
+  const bw = board.clientWidth || 1, bh = board.clientHeight || 1;
+  state.cards = (wf.cards||[]).map(c=>({ uid:"c"+(++uid), val:c.val, type:c.type, source:c.source,
+    x: c.xp/100*bw, y: c.yp/100*bh,
+    readings: (c.readings||[]).map(r=>({ label:r.label, seed:r.seed||0 })),
+    adopted: (c.adopted||[]).slice() }));
+  if(wf.render) showRender(wf.render);
+  if(wf.ref){ const sub = document.getElementById("featSub");
+    if(sub) sub.textContent = "reopened · words from " + wf.ref; }
+  syncChipSel(); renderCtl(); renderVars(); refresh(); drawThreads();
+  restoring = false;
+}
+
+function wfTitle(){
+  const s = silLabel();
+  const lead = state.cards[0] ? state.cards[0].val : "study";
+  return (s ? s + " · " : "") + lead;
+}
+
+btnSave.addEventListener("click", ()=>{
+  if(!state.cards.length) return;
+  const updating = !!currentWfId;
+  if(!currentWfId) currentWfId = DD.newWorkflowId();
+  DD.saveWorkflow(Object.assign(canvasSnapshot(), { id: currentWfId, title: wfTitle() }));
+  btnSave.textContent = updating ? "Updated in library ✓" : "Saved to library ✓";
+  btnSave.classList.add("done");
+  setTimeout(()=>{ btnSave.textContent = "Save to library"; btnSave.classList.remove("done"); }, 2000);
+});
+
 refresh();
+renderVars(); /* the empty state explains the row before anything is generated */
+
+/* reopen an archived workflow, or pick the autosave back up. an explicit
+   ?seed= entry from the garden always starts a fresh canvas. */
+(function(){
+  if(wfParam){
+    const wf = DD.getWorkflow(wfParam);
+    if(wf && wf.cards.length){ currentWfId = wf.id; restoreCanvas(wf); return; }
+  }
+  if(!new URLSearchParams(location.search).has("seed")){
+    const auto = DD.loadCanvasAutosave();
+    if(auto && (auto.cards.length || (auto.features||[]).length)) restoreCanvas(auto);
+  }
+})();
 </script>
 </body>
 </html>

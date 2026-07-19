@@ -57,6 +57,15 @@ for (const [k, expected] of Object.entries(want)) {
 }
 const budgetLocal = await page.evaluate(async (b) => (await fetch(b + "/api/budget")).json(), BASE);
 ok(budgetLocal.cap === 50, "/api/budget reports the $50 cap (got " + JSON.stringify(budgetLocal) + ")");
+/* the ports must be OURS: a stale serve.mjs (a live key, no GROW_OFF) once
+   answered the whole offline section with real Gemini calls. Abort loudly.
+   (fetched from node, not the page — the two ports are different origins) */
+const budgetMock = await (await fetch(BASE_MOCK + "/api/budget")).json();
+if (budgetLocal.mode !== "off" || budgetMock.mode !== "mock") {
+  console.error("\n!! wrong server answered (:" + PORT_OFF + " says '" + budgetLocal.mode + "', :" + PORT_MOCK + " says '" + budgetMock.mode + "')");
+  console.error("!! something else is squatting on the port — kill any running serve.mjs / dev server and rerun.");
+  done(1);
+}
 
 /* ---------- 1. START ---------- */
 console.log("\n1. start.html — the garden");
@@ -191,6 +200,42 @@ const imgGrew = await p5.waitForFunction(
 ).then(() => true).catch(() => false);
 ok(imgGrew, "a generated mood image grew into the garden as a node");
 
+/* upload your own reference: the model reads the pixels and names the seed */
+const PNG1 = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==",
+  "base64"
+);
+await p5.setInputFiles("#fileIn", { name: "mine.png", mimeType: "image/png", buffer: PNG1 });
+const named = await p5.waitForFunction(
+  () => nodes.some((n) => n.kind === "seed" && n.upload && n.t === "woven brass mesh"),
+  { timeout: 6000 }
+).then(() => true).catch(() => false);
+ok(named, "an uploaded image is read by the model and the seed takes its name");
+
+/* the name + thumb travel: light a word, cross to the canvas, check refs */
+await p5.evaluate(() => light(nodes.find((n) => n.kind === "word" && n.t === "moth-wing grey")));
+await p5.click("#goBtn");
+await p5.waitForURL(/mvp_v6\.html\?seed=/, { timeout: 5000 });
+const refsArrived = await p5.waitForFunction(
+  () => [...document.querySelectorAll("#refPanel .ref span")].some((x) => x.textContent === "woven brass mesh"),
+  { timeout: 6000 }
+).then(() => true).catch(() => false);
+const refP = await p5.evaluate(() => ({
+  names: [...document.querySelectorAll("#refPanel .ref span")].map((x) => x.textContent),
+  thumbs: document.querySelectorAll("#refPanel .ref.has").length,
+}));
+ok(refsArrived && !refP.names.some((n) => /^upload-/.test(n)),
+  "the refs panel shows the model's name for the upload, never an internal key (got " + refP.names.join(", ") + ")");
+ok(refP.thumbs >= 2, "gallery + upload thumbs both render in the refs panel (got " + refP.thumbs + ")");
+
+/* + Add reference on the canvas: the same reading files features */
+await p5.setInputFiles("#refFile", { name: "swatch.png", mimeType: "image/png", buffer: PNG1 });
+const extracted = await p5.waitForFunction(
+  () => typeof FEATURES !== "undefined" && FEATURES.some((f) => String(f.id).startsWith("x") && f.source === "woven brass mesh"),
+  { timeout: 6000 }
+).then(() => true).catch(() => false);
+ok(extracted, "+ Add reference extracts features from the image into the palette");
+
 /* the canvas AI preview, endpoint up: formula -> image */
 await p5.goto(BASE_MOCK + "/mvp_v6.html?seed=iridescent");
 await p5.waitForFunction(() => document.querySelectorAll(".tag").length > 0);
@@ -226,6 +271,16 @@ const cannedHit = await p6.waitForFunction(
   { timeout: 6000 }
 ).then(() => true).catch(() => false);
 ok(cannedHit, "canned association appeared although the endpoint is down");
+
+/* an upload with the model unreachable: no reading, but it still grows */
+await p6.setInputFiles("#fileIn", { name: "mine.png", mimeType: "image/png", buffer: PNG1 });
+const upCanned = await p6.waitForFunction(
+  () => { const s = nodes.find((n) => n.upload); return !!s && nodes.filter((n) => n.parent === s.id && n.kind === "word").length >= 2; },
+  { timeout: 8000 }
+).then(() => true).catch(() => false);
+ok(upCanned, "an upload still sprouts canned words when the model is unreachable");
+const upName = await p6.evaluate(() => nodes.find((n) => n.upload).t);
+ok(upName === "your image", "and keeps its honest placeholder name (got '" + upName + "')");
 
 /* image fallback: helper called with the endpoint down -> canned MOODPIX */
 await p6.evaluate(() => maybeGrowImage(nodes.find((n) => n.kind === "word"), "flow"));
@@ -273,6 +328,61 @@ await p7.waitForTimeout(200);
 const restored = await p7.evaluate(() =>
   [...document.querySelectorAll("iframe")].map((f) => f.contentDocument.documentElement.style.getPropertyValue("--bg").trim()));
 ok(restored.every((v) => v === ""), "switching back restores the tokens.css default");
+
+/* ---- 8. the canvas, kept: save -> library -> reopen -> autosave ---- */
+console.log("\n8. workflows — the canvas survives leaving it");
+const p8 = await (await browser.newContext()).newPage();
+await p8.goto(BASE + "/mvp_v6.html?seed=iridescent");
+await p8.waitForFunction(() => document.querySelectorAll(".tag").length > 0);
+const tag8 = await p8.$(".tag"), board8 = await p8.$("#board");
+const tb8 = await tag8.boundingBox(), bb8 = await board8.boundingBox();
+await p8.mouse.move(tb8.x + tb8.width / 2, tb8.y + tb8.height / 2);
+await p8.mouse.down();
+await p8.mouse.move(bb8.x + bb8.width * 0.3, bb8.y + bb8.height * 0.4, { steps: 8 });
+await p8.mouse.up();
+/* adopt a reading + lock a model, so the snapshot carries real curation */
+await p8.evaluate(() => { state.cards[0].adopted.push(1); refresh(); });
+await p8.click("#silChips .chip:nth-child(4)");
+await p8.click("#poseChips .chip:nth-child(2)");
+await p8.click("#btnLock");
+ok(!(await p8.evaluate(() => document.getElementById("btnSave").disabled)), "save unlocks once a card is on the board");
+await p8.click("#btnSave");
+const savedCount = await p8.evaluate(() => JSON.parse(localStorage.getItem("dd_workflows") || "[]").length);
+ok(savedCount === 1, "saving archived one workflow (got " + savedCount + ")");
+const savedXp = await p8.evaluate(() =>
+  Math.round(state.cards[0].x / document.getElementById("board").clientWidth * 100));
+
+await p8.goto(BASE + "/library.html");
+const row = await p8.waitForSelector(".wf[href*='?wf=']", { timeout: 4000 }).catch(() => null);
+ok(!!row, "the library shows the real workflow, not the demo shelf");
+const rowTitle = row ? await row.$eval(".wt", (el) => el.textContent) : "";
+ok(/Mermaid/i.test(rowTitle) && /iridescent/i.test(rowTitle), "the row is titled from the formula (got '" + rowTitle + "')");
+const descTxt = await p8.$eval("#wfDesc", (el) => el.textContent);
+ok(/^1 saved/.test(descTxt), "the shelf counts real work (got '" + descTxt + "')");
+
+await row.click();
+await p8.waitForFunction(() => typeof state !== "undefined" && location.search.includes("wf=") && state.cards.length > 0);
+const reopened = await p8.evaluate(() => ({
+  cards: state.cards.length, adopted: state.cards[0].adopted.slice(),
+  sil: state.sil, pose: state.pose, locked: state.locked,
+  xp: Math.round(state.cards[0].x / document.getElementById("board").clientWidth * 100),
+}));
+ok(reopened.cards === 1 && reopened.adopted.length === 1, "reopening restored the card and its adopted reading");
+ok(reopened.locked && reopened.sil === "mermaid" && reopened.pose === "walking", "the locked model came back (" + reopened.sil + " · " + reopened.pose + ")");
+ok(Math.abs(reopened.xp - savedXp) <= 2, "the composition survived — card back where it was left (saved " + savedXp + "%, reopened " + reopened.xp + "%)");
+
+/* autosave: leave with a bare URL and everything is still there */
+await p8.goto(BASE + "/mvp_v6.html");
+await p8.waitForFunction(() => state.cards.length > 0, { timeout: 4000 }).catch(() => {});
+const autoBack = await p8.evaluate(() => ({ cards: state.cards.length, locked: state.locked }));
+ok(autoBack.cards === 1 && autoBack.locked, "a bare revisit picks the autosaved canvas back up");
+
+/* identity survives every door: saving after ?wf-reopen AND after an
+   autosave-restore must update the archive, never mint a twin */
+await p8.click("#btnSave");
+await p8.waitForTimeout(200);
+const stillOne = await p8.evaluate(() => JSON.parse(localStorage.getItem("dd_workflows") || "[]").length);
+ok(stillOne === 1, "re-saving through the autosave door updates in place (got " + stillOne + " rows)");
 
 console.log("\njs errors: " + (errs.length ? "\n  " + errs.join("\n  ") : "none"));
 fails += errs.length;

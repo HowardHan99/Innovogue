@@ -64,17 +64,16 @@ a.brand:hover::before{box-shadow:0 0 22px rgba(255,143,194,.9)}
   align-items:center;justify-content:center;gap:7px;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;
   background:rgba(255,143,194,.03)}
 .dropzone .plus{font-size:32px;line-height:1;font-weight:600;color:var(--pink);opacity:.85}
-.dropzone.haspic .plus{display:none}
 .dropzone:hover,.dropzone.over{border-color:var(--pink);background:rgba(255,143,194,.055)}
 .dropzone .big{font-size:17px;font-weight:600}
 .dropzone .sm{font-family:'Space Mono',monospace;font-size:10.5px;color:var(--ink-soft);letter-spacing:.06em}
-.dropzone .or{font-family:'Gochi Hand',cursive;font-size:13px;color:var(--ink-soft)}
+.dropzone .or{font-family:'Familjen Grotesk',sans-serif;font-size:12.5px;color:var(--ink-soft)}
 .dropzone input{display:none}
-.dropzone img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.dropzone .re{position:absolute;right:8px;top:8px;z-index:2;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.06em;
-  background:rgba(0,0,0,.65);border:1px solid #ffffff40;color:var(--ink);border-radius:999px;padding:4px 10px;display:none}
-.dropzone.haspic .re{display:block}
-.dropzone.haspic .big,.dropzone.haspic .sm,.dropzone.haspic .or{display:none}
+/* upload status: "reading your image…" while the model looks, errors when a
+   file can't be read. Empty = hidden, the resting copy stays clean. */
+.dropzone .dznote{font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:.06em;color:var(--pink);min-height:0}
+.dropzone .dznote:empty{display:none}
+.dropzone .dznote.err{color:#d98a7c}
 .gallery h4{font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:.12em;color:var(--ink-soft);margin-bottom:9px}
 .gcards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .gc{border-radius:9px;aspect-ratio:3/4;position:relative;display:flex;align-items:flex-end;overflow:hidden;
@@ -318,12 +317,12 @@ a.brand:hover::before{box-shadow:0 0 22px rgba(255,143,194,.9)}
       <span class="hint">anything that caught your eye counts</span></div>
     <div class="pickrow">
       <label class="dropzone" id="dz">
-        <input type="file" id="fileIn" accept="image/*">
-        <span class="re" id="reBtn">RESELECT</span>
+        <input type="file" id="fileIn" accept="image/*" multiple>
         <span class="plus" aria-hidden="true">+</span>
         <span class="big">Drag &amp; drop an image here</span>
-        <span class="sm">JPG / PNG · OR CLICK TO CHOOSE A FILE</span>
+        <span class="sm">JPG / PNG / WEBP · OR CLICK TO CHOOSE A FILE</span>
         <span class="or">…or borrow one from your gallery →</span>
+        <span class="dznote" id="dzNote" role="status"></span>
       </label>
       <div class="gallery">
         <h4>FROM YOUR GALLERY</h4>
@@ -385,7 +384,6 @@ const WORDS = {
   "Orchid":      { core:"orchid",     sug:["petals","symmetry","bloom"] },
   "Calla Lily":  { core:"calla lily", sug:["curve","minimal","ivory"] },
   "Jellyfish":   { core:"jellyfish",  sug:["translucent","drift","tendrils"] },
-  "Your upload": { core:"your image", sug:["mood","surface","form"] },
 };
 const SEEDSRC = { "Betta Fish":"images/ref01.png","Orchid":"images/ref02.png","Calla Lily":"images/ref03.png","Jellyfish":"images/ref04.png" };
 const MOODPIX = DD.MOODPIX;
@@ -399,9 +397,13 @@ DD.setGrowEngine(DD.llmEngine({ endpoint: "/api/grow", timeoutMs: 5000 }));
    one is a network call: swapping canned for an LLM is one line at boot,
    DD.setGrowEngine(DD.llmEngine({endpoint:"/api/grow"})), and nothing in this
    page changes. it also refuses to hand back a word already on the board. */
-async function growFor(term){
+async function growFor(term, node){
   const avoid = nodes.filter(n=>n.kind!=="image" && n.t).map(n=>n.t);
-  const sprouts = await DD.growFor(term, { seed: chosen, avoid });
+  const ctx = { seed: chosen, avoid };
+  /* growing from an uploaded seed: attach the image, so the associations
+     come from the pixels rather than from the seed's name alone */
+  if(node && node.upload && node.src) ctx.image = node.src;
+  const sprouts = await DD.growFor(term, ctx);
   return sprouts.map(s => s.kind==="image"
     ? { t:"", kind:"image", src:s.img }
     : { t:s.text, kind:"word" });
@@ -696,7 +698,7 @@ function grow(node){
   const term = node.kind==="image" ? (chosen||"texture") : node.t;
   showNote(think(term)); puff(px(node));
   setTimeout(async ()=>{
-    const ks = await growFor(term);
+    const ks = await growFor(term, node);
     ks.forEach(k=>createChild(node,k)); sync();
     /* the llm path returns words only; sometimes also grow an image FOR this
        word. generation takes seconds, so it arrives late, like the garden
@@ -852,14 +854,58 @@ document.querySelectorAll(".gc").forEach(g=>{
     else { g.classList.add("on"); addSeed(k, SEEDSRC[k]); }
   });
 });
-fileIn.addEventListener("change", ()=>{ if(fileIn.files[0]) showFile(fileIn.files[0]); });
+/* ---- your own reference: file -> decode-checked jpeg -> seed -> the model reads it ---- */
+const dzNote = document.getElementById("dzNote");
+let dzT=null, upN=0;
+function dzSay(msg, err){
+  dzNote.textContent=msg||""; dzNote.classList.toggle("err",!!err);
+  clearTimeout(dzT); if(msg) dzT=setTimeout(()=>{ dzNote.textContent=""; dzNote.classList.remove("err"); }, 3600);
+}
+/* model text enters innerHTML strings (tray, captions) — keep it inert */
+const safeText = s => String(s||"").replace(/[<>&"]/g,"").trim();
+fileIn.addEventListener("change", ()=>{ addUploads(fileIn.files); fileIn.value=""; });
 ["dragover","dragenter"].forEach(ev=>dz.addEventListener(ev, e=>{ e.preventDefault(); dz.classList.add("over"); }));
 ["dragleave","drop"].forEach(ev=>dz.addEventListener(ev, e=>{ e.preventDefault(); dz.classList.remove("over"); }));
-dz.addEventListener("drop", e=>{ const f=e.dataTransfer.files[0]; if(f && f.type.startsWith("image/")) showFile(f); });
-function showFile(f){
-  const rd=new FileReader();
-  rd.onload=()=>{ addSeed("upload-"+uid, rd.result); fileIn.value=""; };
-  rd.readAsDataURL(f);
+dz.addEventListener("drop", e=>addUploads(e.dataTransfer.files));
+function readFile(f){
+  return new Promise(res=>{ const rd=new FileReader(); rd.onload=()=>res(rd.result); rd.onerror=()=>res(null); rd.readAsDataURL(f); });
+}
+async function addUploads(list){
+  const files=[...(list||[])].filter(f=>f && f.type.startsWith("image/")).slice(0,4);
+  if(!files.length){ dzSay("that file isn't an image — JPG, PNG or WEBP", true); return; }
+  for(const f of files){
+    const raw = await readFile(f);
+    /* decode check: a HEIC or mislabeled file fails HERE, loudly, instead of
+       becoming an invisible broken seed in the garden */
+    const prep = raw && await DD.prepRefImage(raw);
+    if(!prep){ dzSay("couldn't read " + safeText(f.name) + " — try JPG, PNG or WEBP", true); continue; }
+    addUploadSeed(prep);
+  }
+}
+function addUploadSeed(prep){
+  const key="upload-"+(++upN);
+  addSeed(key, prep.src, { upload:true, thumb:prep.thumb });
+  const id=seeds[key];
+  dzSay("planted — reading your image…");
+  /* the model reads the pixels: the seed gets a real name (which the whole
+     lineage inherits as `from`) and its first associations come from what is
+     actually in the picture. Any failure falls back to the canned path. */
+  DD.describeImage(prep.src).then(async d=>{
+    const n=byId(id); if(!n) return; /* composted before the reading came back */
+    if(d && safeText(d.label)){
+      const label = safeText(d.label).slice(0,40);
+      n.t=label; n.label=label;
+      const cap=n.body && n.body.querySelector(".scap"); if(cap) cap.textContent=label;
+      chosen=Object.keys(seeds).map(x=>byId(seeds[x]).label).join(" + ");
+      renderTray();
+      dzSay('the garden read it as “'+label+'”');
+      d.words.forEach(t=>{ const w=safeText(t); if(w) createChild(n,{t:w,kind:"word"}); });
+    } else {
+      dzSay("");
+      (await growFor(n.t)).filter(k=>k.kind==="word").forEach(k=>createChild(n,k));
+    }
+    sync();
+  });
 }
 
 /* ---- shimmering light field around a seed orb (follows on drag) ---- */
@@ -895,7 +941,8 @@ function makeSeedNeuron(node){
 const SEEDPOS=[{x:50,y:49},{x:31,y:40},{x:69,y:59},{x:34,y:68},{x:67,y:32},{x:50,y:74}];
 let seeds={}; // key -> seedId
 
-function addSeed(k, src){
+function addSeed(k, src, opts){
+  opts=opts||{};
   if(seeds[k]) return;
   step2.classList.remove("off");
   measure();
@@ -903,11 +950,16 @@ function addSeed(k, src){
   const idx=Object.keys(seeds).length;
   const pos=SEEDPOS[idx%SEEDPOS.length];
   const w=WORDS[k]||{core:"your image",sug:["mood","surface","form"]};
-  const seed={ id:"n"+(uid++), t:w.core, label:(WORDS[k]?k:"your upload"), kind:"seed", src, x:pos.x, y:pos.y, parent:null, depth:0, lit:false, born:Date.now() };
+  const seed={ id:"n"+(uid++), t:w.core, label:(WORDS[k]?k:"your upload"), kind:"seed", src, x:pos.x, y:pos.y, parent:null, depth:0, lit:false, born:Date.now(),
+    upload:!!opts.upload, thumb:opts.thumb||null };
   nodes.push(seed); seeds[k]=seed.id; mountNode(seed);
   seed.neuronEl=makeSeedNeuron(seed);
-  w.sug.forEach(t=>createChild(seed,{t,kind:"word"}));
-  createChild(seed,{kind:"image", src: MOODPIX[(k.length)%MOODPIX.length]});
+  /* an upload waits for the model's reading of the pixels \u2014 canned sug words
+     and a random stock mood image would only pretend to be about it */
+  if(!opts.upload){
+    w.sug.forEach(t=>createChild(seed,{t,kind:"word"}));
+    createChild(seed,{kind:"image", src: MOODPIX[(k.length)%MOODPIX.length]});
+  }
   chosen=Object.keys(seeds).map(x=>byId(seeds[x]).label).join(" + ");
   showNote('"'+seed.t+'" \u2014 touch a word, i\u2019ll wander from it');
   renderTray(); renderConstel(); sync();
@@ -939,7 +991,7 @@ function renderTray(){
   tray.classList.add("has");
   tray.innerHTML='<span class="trayk">SEEDS IN PLAY \u00b7 '+keys.length+'</span>'+
     keys.map(k=>{ const n=byId(seeds[k]);
-      return '<span class="tchip"><span class="tth" style="background-image:url(\''+n.src+'\')"></span>'+n.label+'<button class="tx" data-k="'+k+'" aria-label="remove '+n.label+'">\u00d7</button></span>';
+      return '<span class="tchip"><span class="tth" style="background-image:url(\''+(n.thumb||n.src)+'\')"></span>'+n.label+'<button class="tx" data-k="'+k+'" aria-label="remove '+n.label+'">\u00d7</button></span>';
     }).join("")+'<button class="tclear" id="tclear">clear all</button>';
   tray.querySelectorAll(".tx").forEach(b=>b.addEventListener("click", ()=>{ const k=b.dataset.k; const g=[...document.querySelectorAll(".gc")].find(x=>x.dataset.k===k); if(g)g.classList.remove("on"); removeSeed(k); }));
   const tc=tray.querySelector("#tclear"); if(tc) tc.addEventListener("click", clearSeeds);
@@ -962,8 +1014,13 @@ goBtn.addEventListener("click", e=>{
     };
   });
 
-  const refs = Object.keys(seeds);
-  const pocket = DD.buildPocket(chosen || refs.join(" + "), refs, lit);
+  /* refs travel as labels ("your upload" or the model's reading), never the
+     internal upload-N keys; an upload also sends its thumb so the canvas can
+     show the actual image the words came from */
+  const keys = Object.keys(seeds);
+  const refs = keys.map(k=>byId(seeds[k]).label);
+  const refImgs = keys.map(k=>byId(seeds[k]).thumb || null);
+  const pocket = DD.buildPocket(chosen || refs.join(" + "), refs, lit, refImgs);
   DD.savePocket(pocket);
 
   /* the words also ride in the link. storage is the optimisation, not the

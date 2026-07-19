@@ -85,6 +85,28 @@ for (let i = 0; i < 10 && !(b1.spent > b0.spent); i++) {
 }
 ok(b1.spent > b0.spent, "the ledger booked it ($" + b0.spent + " -> $" + b1.spent + ")");
 
+/* ---- the archival loop: save -> library -> reopen ---- */
+await page.goto(BASE + "/mvp_v6.html?seed=iridescent");
+await page.waitForFunction(() => typeof state !== "undefined" && document.querySelectorAll(".tag").length > 0);
+await page.evaluate(() => {
+  const f = FEATURES[0];
+  placeNode({ val: f.val, type: f.type, source: f.source }, 220, 160);
+  state.sil = "aline"; state.pose = "front"; state.locked = true;
+  refresh();
+});
+await page.click("#btnSave");
+await page.goto(BASE + "/library.html");
+const prodRow = await page.waitForSelector(".wf[href*='?wf=']", { timeout: 5000 }).catch(() => null);
+ok(!!prodRow, "library shows the saved workflow on prod");
+if (prodRow) {
+  await prodRow.click();
+  await page.waitForFunction(
+    () => typeof state !== "undefined" && location.search.includes("wf=") && state.cards.length > 0,
+    { timeout: 15000 });
+  const back = await page.evaluate(() => ({ cards: state.cards.length, locked: state.locked }));
+  ok(back.cards === 1 && back.locked, "reopening on prod restores the canvas");
+}
+
 /* ---- palette bench ---- */
 await page.goto(BASE + "/palette.html");
 const benchOk = await page.waitForFunction(() => {

@@ -98,6 +98,11 @@ a.brand:hover::before{box-shadow:0 0 22px rgba(255,143,194,.9)}
 .wf .open{font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:.06em;color:var(--ink-soft);
   border:1px solid var(--line);border-radius:999px;padding:8px 14px;white-space:nowrap;transition:all .15s}
 .wf:hover .open{background:var(--pink);border-color:var(--pink);color:#2E1220}
+.wf{position:relative}
+.wf .wfdel{position:absolute;top:8px;right:10px;border:0;background:transparent;color:var(--ink-dim);
+  font-size:14px;line-height:1;cursor:pointer;padding:4px 7px;border-radius:8px;opacity:0;transition:opacity .15s,background .15s,color .15s}
+.wf:hover .wfdel,.wf .wfdel:focus-visible{opacity:1}
+.wf .wfdel:hover{color:#ff9a9a;background:rgba(190,74,74,.15)}
 
 .pubrow{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
   background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 22px}
@@ -266,7 +271,7 @@ a.brand:hover::before{box-shadow:0 0 22px rgba(255,143,194,.9)}
             <a class="newbtn" href="start.html">＋ New design</a>
           </div>
         </div>
-        <div class="wfdesc">3 saved · image reference → feature nodes → your refinement. reopen any of them on the canvas.</div>
+        <div class="wfdesc" id="wfDesc">3 saved · image reference → feature nodes → your refinement. reopen any of them on the canvas.</div>
         <div class="wfempty" id="wfEmpty">nothing matches — try another word, or start a new design ↗</div>
 
         <a class="wf" href="mvp_v6.html">
@@ -429,6 +434,51 @@ renderTags();
   T.addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); flip(); } });
 })();
 
+
+/* real workflows: what you actually saved from the canvas. the hard-coded
+   rows are demo furniture — they step back the moment real work exists,
+   and are labeled as samples until then. */
+(function(){
+  const real = DD.listWorkflows();
+  const desc = document.getElementById("wfDesc");
+  const demos = [...document.querySelectorAll(".wf")];
+  if(!real.length){
+    if(desc) desc.innerHTML = 'samples · press <b>Save to library</b> on the canvas and your own work takes this shelf.';
+    return;
+  }
+  const cont = demos[0].parentElement;
+  demos.forEach(d=>d.remove());
+  const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const catVar = { Pattern:"--pat", Silhouette:"--sil", Color:"--col", Symbolic:"--sym", Custom:"--cus" };
+  const setCount = ()=>{ if(desc) desc.textContent = (cont.querySelectorAll(".wf").length) + " saved · reopen any of them on the canvas — cards, model and render come back as you left them."; };
+  real.forEach(wf=>{
+    const adopted = wf.cards.reduce((n,c)=>n+(c.adopted?c.adopted.length:0),0);
+    const dots = wf.cards.slice(0,3).map(c=>'<i style="background:var('+(catVar[c.type]||"--cus")+')"></i>').join("");
+    const model = wf.locked && wf.sil ? esc(String(wf.sil).toUpperCase()) + (wf.pose ? " · " + esc(String(wf.pose).toUpperCase()) : "") : "UNLOCKED";
+    const bold = wf.cards.slice(0,3).map(c=>"<b>"+esc(c.val)+"</b>").join(", ");
+    const snip = bold
+      + (wf.controls.length ? " · yours: " + esc(wf.controls.join(", ")) : "")
+      + (wf.ref ? " — from " + esc(wf.ref) : "");
+    const thumb = wf.render
+      ? '<div class="thumb" style="background-image:url(\'' + wf.render + '\');background-size:cover;background-position:top center"></div>'
+      : '<div class="thumb" style="background:linear-gradient(150deg, var(' + (catVar[(wf.cards[0]||{}).type] || "--cus") + '), var(--card) 82%)"></div>';
+    const a = document.createElement("a");
+    a.className = "wf";
+    a.href = "mvp_v6.html?wf=" + encodeURIComponent(wf.id);
+    a.innerHTML = thumb +
+      '<div class="mid"><div class="wt">' + esc(wf.title || "Canvas study") + '</div>' +
+      '<div class="steps">' + dots + ' ' + wf.cards.length + ' NODES <span class="sarr">→</span> ' + adopted + ' ADOPTED <span class="sarr">→</span> ' + model + '</div>' +
+      '<div class="snip">' + snip + '</div></div>' +
+      '<span class="open">OPEN IN CANVAS →</span>' +
+      '<button class="wfdel" title="delete this workflow" aria-label="delete ' + esc(wf.title || "workflow") + '">×</button>';
+    a.querySelector(".wfdel").addEventListener("click", e=>{
+      e.preventDefault(); e.stopPropagation();
+      DD.removeWorkflow(wf.id); a.remove(); setCount();
+    });
+    cont.appendChild(a);
+  });
+  setCount();
+})();
 
 /* workflow search */
 (function(){

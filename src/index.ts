@@ -14,6 +14,8 @@ import * as seed from "./seed.js";
 import * as storage from "./storage.js";
 import * as grow from "./grow.js";
 import * as classify from "./classify.js";
+import * as workflow from "./workflow.js";
+import * as weave from "./weave.js";
 import {
   CATS,
   ALL_CATEGORIES,
@@ -74,10 +76,33 @@ export const currentGrowEngine = grow.currentEngine;
 export const cannedEngine = grow.cannedEngine;
 export const llmEngine = grow.llmEngine;
 export const proposePrompt = grow.proposePrompt;
+export const describePrompt = grow.describePrompt;
 export const growImage = grow.growImage;
+export const describeImage = grow.describeImage;
+export const prepRefImage = grow.prepRefImage;
 export const MOODPIX = grow.MOODPIX;
 export type { Sprout, GrowEngine, GrowContext, LLMConfig, GrowImageInput } from "./grow.js";
+
+/* weaving: the formula spoken in one language everywhere. The canvas drawer
+   and the api endpoints (via the generated api/_weave.mjs) share these, so
+   HOW IT READS and the render prompt are the same sentences. */
+export const weaveSentences = weave.weaveSentences;
+export const ingredientPhrase = weave.ingredientPhrase;
+export const readingPhrase = weave.readingPhrase;
+export const asFormula = weave.asFormula;
+export type { Ingredient, WeaveFormula, WeaveCategory, WeaveOpts } from "./weave.js";
 
 /* storage honesty: a page can ask whether it is really persisting anything */
 export const storageBackend = storage.storageBackend;
 export const isPersistent = storage.isPersistent;
+
+/* workflows: canvas -> library and back, plus the canvas autosave */
+export const listWorkflows = workflow.listWorkflows;
+export const getWorkflow = workflow.getWorkflow;
+export const saveWorkflow = workflow.saveWorkflow;
+export const removeWorkflow = workflow.removeWorkflow;
+export const newWorkflowId = workflow.newWorkflowId;
+export const autosaveCanvas = workflow.autosaveCanvas;
+export const loadCanvasAutosave = workflow.loadCanvasAutosave;
+export const clearCanvasAutosave = workflow.clearCanvasAutosave;
+export type { Workflow, WfCard, WfFeature, WfRef } from "./workflow.js";

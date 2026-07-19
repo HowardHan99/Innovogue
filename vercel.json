@@ -2,7 +2,8 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".",
   "functions": {
-    "api/image.mjs": { "maxDuration": 60 }
+    "api/image.mjs": { "maxDuration": 60 },
+    "api/vary.mjs": { "maxDuration": 30 }
   },
   "rewrites": [
     { "source": "/", "destination": "/home.html" }

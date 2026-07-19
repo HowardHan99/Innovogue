@@ -89,6 +89,7 @@ function proposePrompt(term, ctx = {}, n = 3) {
   const avoid = (ctx.avoid ?? []).slice(0, 40).join(", ");
   return [
     `You are helping a fashion designer free-associate. They are pulling on the word "${term}".`,
+    ctx.image ? "Their own reference image is attached: ground every association in what is actually visible in it." : "",
     lineage ? `They reached it by: ${lineage}.` : "",
     `Offer ${n} associations that could each become a garment decision: a texture, a shape, a colour, a feeling, a construction detail.`,
     "Rules:",
@@ -99,6 +100,17 @@ function proposePrompt(term, ctx = {}, n = 3) {
     avoid ? `- Already on their board, do not repeat: ${avoid}.` : "",
     `Return JSON only: {"words": ["...", "...", "..."]}`
   ].filter(Boolean).join("\n");
+}
+function describePrompt(n = 3) {
+  return [
+    "A fashion designer just uploaded this image as a reference. Look at it.",
+    `Return a label and ${n} associations, as JSON.`,
+    '- label: 2 to 4 lowercase words naming what the image actually shows ("rusted iron gate", "peony in rain"). No "photo of", no guessing beyond the frame.',
+    "- words: associations that could each become a garment decision: a texture, a shape, a colour, a feeling, a construction detail. Grounded in what is visible, two to four words each.",
+    "- Do not rank or explain. Vary the register: not three textures.",
+    "- No brand names, no season names, no trend language.",
+    `Return JSON only: {"label": "...", "words": ["...", "...", "..."]}`
+  ].join("\n");
 }
 function llmEngine(cfg, fallback = cannedEngine()) {
   return {
@@ -133,26 +145,66 @@ function llmEngine(cfg, fallback = cannedEngine()) {
     }
   };
 }
+function decodeImg(dataUrl) {
+  const img = new Image();
+  return new Promise((res, rej) => {
+    img.onload = () => res(img);
+    img.onerror = () => rej(new Error("decode failed"));
+    img.src = dataUrl;
+  });
+}
+function scaleToJpeg(img, maxPx) {
+  const scale = Math.min(1, maxPx / Math.max(img.width, img.height, 1));
+  if (scale >= 1) return null;
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(img.width * scale));
+  c.height = Math.max(1, Math.round(img.height * scale));
+  const ctx = c.getContext("2d");
+  if (!ctx) return null;
+  ctx.drawImage(img, 0, 0, c.width, c.height);
+  return c.toDataURL("image/jpeg", 0.85);
+}
 async function shrinkDataUrl(dataUrl, maxPx) {
   try {
     if (typeof document === "undefined") return dataUrl;
-    const img = new Image();
-    await new Promise((res, rej) => {
-      img.onload = () => res();
-      img.onerror = () => rej(new Error("decode failed"));
-      img.src = dataUrl;
-    });
-    const scale = Math.min(1, maxPx / Math.max(img.width, img.height, 1));
-    if (scale >= 1) return dataUrl;
-    const c = document.createElement("canvas");
-    c.width = Math.max(1, Math.round(img.width * scale));
-    c.height = Math.max(1, Math.round(img.height * scale));
-    const ctx = c.getContext("2d");
-    if (!ctx) return dataUrl;
-    ctx.drawImage(img, 0, 0, c.width, c.height);
-    return c.toDataURL("image/jpeg", 0.85);
+    return scaleToJpeg(await decodeImg(dataUrl), maxPx) ?? dataUrl;
   } catch {
     return dataUrl;
+  }
+}
+async function prepRefImage(dataUrl) {
+  try {
+    if (typeof document === "undefined") return null;
+    const img = await decodeImg(dataUrl);
+    if (!img.width || !img.height) return null;
+    return {
+      src: scaleToJpeg(img, 768) ?? dataUrl,
+      thumb: scaleToJpeg(img, 280) ?? dataUrl
+    };
+  } catch {
+    return null;
+  }
+}
+async function describeImage(image, cfg = {}) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), cfg.timeoutMs ?? 15e3);
+  try {
+    const res = await fetch(cfg.endpoint ?? "/api/grow", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ image }),
+      signal: ctl.signal
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const label = typeof data.label === "string" ? data.label.trim().slice(0, 40) : "";
+    const words = Array.isArray(data.words) ? data.words.filter((w) => typeof w === "string" && !!w.trim()).map((w) => w.trim()).slice(0, 4) : [];
+    if (!label || !words.length) return null;
+    return { label, words };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
 async function growImage(input, cfg = {}) {
@@ -189,9 +241,12 @@ export {
   MOODPIX,
   cannedEngine,
   currentEngine,
+  describeImage,
+  describePrompt,
   grow,
   growImage,
   llmEngine,
+  prepRefImage,
   proposePrompt,
   setEngine
 };

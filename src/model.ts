@@ -70,6 +70,11 @@ export interface Pocket {
   /* human label for the reference(s): "Betta Fish + Orchid" */
   ref: string;
   refs: string[];
+  /* one entry per ref, aligned with `refs`: a small thumb (data URL) for an
+     upload, null for a gallery reference the canvas already knows. Storage
+     only — the seed link drops data URLs, so this arrives via the pocket or
+     not at all, and the canvas falls back to name-only chips. */
+  refImgs?: (string | null)[];
   words: LitWord[];
   savedAt: number;
 }

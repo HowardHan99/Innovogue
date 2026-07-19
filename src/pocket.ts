@@ -67,14 +67,35 @@ export function toLitWord(raw: RawLit, litAt: number): LitWord {
   return w;
 }
 
-export function buildPocket(ref: string, refs: string[], lit: RawLit[]): Pocket {
-  return {
+/* an upload thumb rides the pocket into storage; cap it so one enormous
+   entry cannot eat the whole 5MB budget the workflows also live in */
+const MAX_REF_IMG = 300_000;
+
+function cleanRefImgs(refImgs: (string | null)[] | undefined, n: number): (string | null)[] | undefined {
+  if (!Array.isArray(refImgs)) return undefined;
+  const out = refImgs
+    .slice(0, n)
+    .map((s) => (typeof s === "string" && s.startsWith("data:image") && s.length <= MAX_REF_IMG ? s : null));
+  while (out.length < n) out.push(null);
+  return out.some(Boolean) ? out : undefined;
+}
+
+export function buildPocket(
+  ref: string,
+  refs: string[],
+  lit: RawLit[],
+  refImgs?: (string | null)[]
+): Pocket {
+  const p: Pocket = {
     v: SCHEMA_VERSION,
     ref: ref || refs.join(" + "),
     refs: refs.slice(),
     words: lit.map((raw, i) => toLitWord(raw, i)),
     savedAt: Date.now(),
   };
+  const imgs = cleanRefImgs(refImgs, p.refs.length);
+  if (imgs) p.refImgs = imgs;
+  return p;
 }
 
 /* ---- migration ---- */
@@ -91,14 +112,18 @@ export function migrate(v: unknown): Pocket | null {
   const p = v as Partial<Pocket>;
   if (Array.isArray(p.words)) {
     const words = p.words.filter((w): w is LitWord => !!w && typeof w === "object");
-    return {
+    const refs = Array.isArray(p.refs) ? p.refs.filter((r): r is string => typeof r === "string") : [];
+    const out: Pocket = {
       v: SCHEMA_VERSION,
       ref: typeof p.ref === "string" ? p.ref : "",
-      refs: Array.isArray(p.refs) ? p.refs.filter((r): r is string => typeof r === "string") : [],
+      refs,
       /* a v1 pocket has words but no reading on them: read them now */
       words: words.map((w, i) => (w.category ? w : toLitWord({ text: w.text, img: w.img, from: w.from, depth: w.depth }, i))),
       savedAt: typeof p.savedAt === "number" ? p.savedAt : Date.now(),
     };
+    const imgs = cleanRefImgs(p.refImgs, refs.length);
+    if (imgs) out.refImgs = imgs;
+    return out;
   }
 
   /* the shape that never got read */

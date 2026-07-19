@@ -16,6 +16,8 @@
      garden still grows, because a demo that dies without an API key is not a
      demo. The LLM engine falls back rather than throwing. */
 
+import type { Ingredient } from "./weave.js";
+
 export interface Sprout {
   text: string;
   kind: "word" | "image";
@@ -29,6 +31,10 @@ export interface GrowContext {
   lineage?: string[];
   /* terms already on the board. Repeating one is a wasted proposal. */
   avoid?: string[];
+  /* the user's own uploaded reference, as a (client-shrunk) data URL. Only
+     set when growing from an upload seed: the endpoint attaches it so the
+     associations come from the pixels, not from the phrase "your image". */
+  image?: string;
 }
 
 export interface GrowEngine {
@@ -142,6 +148,7 @@ export function proposePrompt(term: string, ctx: GrowContext = {}, n = 3): strin
   const avoid = (ctx.avoid ?? []).slice(0, 40).join(", ");
   return [
     `You are helping a fashion designer free-associate. They are pulling on the word "${term}".`,
+    ctx.image ? "Their own reference image is attached: ground every association in what is actually visible in it." : "",
     lineage ? `They reached it by: ${lineage}.` : "",
     `Offer ${n} associations that could each become a garment decision: a texture, a shape, a colour, a feeling, a construction detail.`,
     "Rules:",
@@ -154,6 +161,22 @@ export function proposePrompt(term: string, ctx: GrowContext = {}, n = 3): strin
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+/* The brief for reading an upload. Same contract as proposePrompt: candidates
+   only, the user curates. The label names the seed so the garden (and every
+   `from` lineage downstream) can stop saying "your image". Built server-side
+   from this shared source, exactly like proposePrompt. */
+export function describePrompt(n = 3): string {
+  return [
+    "A fashion designer just uploaded this image as a reference. Look at it.",
+    `Return a label and ${n} associations, as JSON.`,
+    '- label: 2 to 4 lowercase words naming what the image actually shows ("rusted iron gate", "peony in rain"). No "photo of", no guessing beyond the frame.',
+    "- words: associations that could each become a garment decision: a texture, a shape, a colour, a feeling, a construction detail. Grounded in what is visible, two to four words each.",
+    "- Do not rank or explain. Vary the register: not three textures.",
+    "- No brand names, no season names, no trend language.",
+    `Return JSON only: {"label": "...", "words": ["...", "...", "..."]}`,
+  ].join("\n");
 }
 
 export function llmEngine(cfg: LLMConfig, fallback: GrowEngine = cannedEngine()): GrowEngine {
@@ -197,21 +220,25 @@ export function llmEngine(cfg: LLMConfig, fallback: GrowEngine = cannedEngine())
 /* ---- generated imagery ---- */
 
 export interface GrowImageInput {
-  kind: "mood" | "render";
+  kind: "mood" | "render" | "sketch";
   /* mood */
   term?: string;
   lineage?: string[];
-  /* render: the design formula, structured — the server phrases it */
+  /* render/sketch: the design formula as ingredients — the server weaves the
+     phrasing through src/weave.ts, so strings and items are both accepted */
   formula?: {
     silhouette?: string;
     pose?: string;
-    colors?: string[];
-    form?: string[];
-    surface?: string[];
-    mood?: string[];
-    notes?: string[];
+    colors?: Array<string | Ingredient>;
+    form?: Array<string | Ingredient>;
+    surface?: Array<string | Ingredient>;
+    mood?: Array<string | Ingredient>;
+    notes?: Array<string | Ingredient>;
     controls?: string[];
+    fabric?: string;
   };
+  /* sketch: the closed-vocabulary recipe the tile was drawn from */
+  recipe?: Record<string, unknown>;
 }
 
 export interface GrowImageConfig {
@@ -223,26 +250,87 @@ export interface GrowImageConfig {
   maxPx?: number;
 }
 
+function decodeImg(dataUrl: string): Promise<HTMLImageElement> {
+  const img = new Image();
+  return new Promise((res, rej) => {
+    img.onload = () => res(img);
+    img.onerror = () => rej(new Error("decode failed"));
+    img.src = dataUrl;
+  });
+}
+
+function scaleToJpeg(img: HTMLImageElement, maxPx: number): string | null {
+  const scale = Math.min(1, maxPx / Math.max(img.width, img.height, 1));
+  if (scale >= 1) return null;
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(img.width * scale));
+  c.height = Math.max(1, Math.round(img.height * scale));
+  const ctx = c.getContext("2d");
+  if (!ctx) return null;
+  ctx.drawImage(img, 0, 0, c.width, c.height);
+  return c.toDataURL("image/jpeg", 0.85);
+}
+
 async function shrinkDataUrl(dataUrl: string, maxPx: number): Promise<string> {
   try {
     if (typeof document === "undefined") return dataUrl;
-    const img = new Image();
-    await new Promise<void>((res, rej) => {
-      img.onload = () => res();
-      img.onerror = () => rej(new Error("decode failed"));
-      img.src = dataUrl;
-    });
-    const scale = Math.min(1, maxPx / Math.max(img.width, img.height, 1));
-    if (scale >= 1) return dataUrl;
-    const c = document.createElement("canvas");
-    c.width = Math.max(1, Math.round(img.width * scale));
-    c.height = Math.max(1, Math.round(img.height * scale));
-    const ctx = c.getContext("2d");
-    if (!ctx) return dataUrl;
-    ctx.drawImage(img, 0, 0, c.width, c.height);
-    return c.toDataURL("image/jpeg", 0.85);
+    return scaleToJpeg(await decodeImg(dataUrl), maxPx) ?? dataUrl;
   } catch {
     return dataUrl;
+  }
+}
+
+/** An upload, made safe to keep: decode-checked (a HEIC or a mislabeled file
+    fails here instead of becoming an invisible seed), shrunk to a working
+    copy the endpoint can take and a thumb the pocket can afford. null means
+    the browser cannot read this file — tell the user, don't plant it. */
+export async function prepRefImage(
+  dataUrl: string
+): Promise<{ src: string; thumb: string } | null> {
+  try {
+    if (typeof document === "undefined") return null;
+    const img = await decodeImg(dataUrl);
+    if (!img.width || !img.height) return null;
+    return {
+      src: scaleToJpeg(img, 768) ?? dataUrl,
+      thumb: scaleToJpeg(img, 280) ?? dataUrl,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** What the model sees in an upload: a short label naming it plus the first
+    associations, or null on ANY failure — offline, no key, budget spent.
+    Callers keep their canned behaviour on null, so the upload never breaks. */
+export async function describeImage(
+  image: string,
+  cfg: { endpoint?: string; timeoutMs?: number } = {}
+): Promise<{ label: string; words: string[] } | null> {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), cfg.timeoutMs ?? 15000);
+  try {
+    const res = await fetch(cfg.endpoint ?? "/api/grow", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ image }),
+      signal: ctl.signal,
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { label?: unknown; words?: unknown };
+    const label = typeof data.label === "string" ? data.label.trim().slice(0, 40) : "";
+    const words = Array.isArray(data.words)
+      ? data.words
+          .filter((w): w is string => typeof w === "string" && !!w.trim())
+          .map((w) => w.trim())
+          .slice(0, 4)
+      : [];
+    if (!label || !words.length) return null;
+    return { label, words };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
 

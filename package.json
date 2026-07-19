@@ -7,7 +7,7 @@
   "scripts": {
     "build": "npm run tokens && npm run core && esbuild src/index.ts --bundle --format=iife --global-name=DD --target=es2019 --outfile=dist/dd.js",
     "tokens": "esbuild src/tokens.ts --bundle --format=esm --outfile=node_modules/.dd/tokens.mjs --log-level=error && node scripts/gen-tokens.mjs",
-    "core": "esbuild src/grow.ts --bundle --format=esm --outfile=api/_grow-core.mjs --log-level=error",
+    "core": "esbuild src/grow.ts --bundle --format=esm --outfile=api/_grow-core.mjs --log-level=error && esbuild src/weave.ts --bundle --format=esm --outfile=api/_weave.mjs --log-level=error",
     "check": "tsc --noEmit",
     "check:core": "esbuild scripts/check-core.ts --bundle --format=esm --platform=node --outfile=node_modules/.dd/check.mjs --log-level=error && node node_modules/.dd/check.mjs",
     "e2e": "npm run build && node scripts/e2e.mjs",
